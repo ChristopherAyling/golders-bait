@@ -207,6 +207,10 @@ pub fn game_step_overworld(game_state: *GameState, inputs: Inputs) void {
         } else {
             switch (current.*) {
                 .context => |*context_menu| {
+                    if (inputs.y.pressed) {
+                        game_state.menu.pop();
+                        return;
+                    }
                     // TODO handle a
                     if (inputs.up.pressed) context_menu.dec();
                     if (inputs.down.pressed) context_menu.inc();
@@ -277,6 +281,7 @@ pub fn game_step_overworld(game_state: *GameState, inputs: Inputs) void {
             {
                 var it = game_state.things.iter_ref();
                 selector.spritekey = .selector;
+                selector.selection_target_ref = ThingPool.get_nil_ref();
                 while (it.next_match(.selectable_near(selector.x, selector.y))) |ref| {
                     selector.spritekey = .selector_active;
                     selector.selection_target_ref = ref;
@@ -284,13 +289,19 @@ pub fn game_step_overworld(game_state: *GameState, inputs: Inputs) void {
             }
 
             // make sure context menu is set
-            if (!selector.selection_target_ref.is_nil() and inputs.y.pressed) {
+            if (inputs.y.pressed) {
                 const selection = game_state.things.get(selector.selection_target_ref);
-                game_state.menu.push(.{ .context = .{ .index = 0, .priority = switch (selection.kind) {
-                    .NPC => .talk,
-                    .ITEM => .pick_up,
-                    else => .move_to,
-                } } });
+                game_state.menu.push(.{
+                    .context = .{
+                        .index = 0,
+                        .priority = switch (selection.kind) {
+                            .NPC => .talk,
+                            .ITEM => .pick_up,
+                            .UNSET => .move_to, // TODO check if valid move to target
+                            else => .move_to,
+                        },
+                    },
+                });
                 return;
             }
 
@@ -347,10 +358,15 @@ pub fn render_step_inventory(game_state: *const GameState, render_state: *Render
 pub fn render_step_overworld(game_state: *GameState, render_state: *RenderState) void {
     // render world
     const player = game_state.things.get_player();
+    const selector = game_state.things.get(player.selector_ref);
     const camera = game_state.things.get(player.camera_ref);
     draw.fill_checkerboard(&render_state.level, 8, 0xFF0000, 0x0);
     {
         draw.draw_image(&render_state.level, game_state.level.?.bg, 0, 0);
+
+        if (selector.visible) {
+            draw.draw_line(&render_state.level, player.x + con.PLAYER_W_HALF, player.y + con.PLAYER_H_HALF, selector.x + con.PLAYER_W_HALF, selector.y + con.PLAYER_H_HALF, 0xAAAAAA);
+        }
 
         // things
         {

@@ -18,3 +18,6 @@ pub const FONT_H = 5;
 
 pub const PLAYER_W = 8;
 pub const PLAYER_H = 8;
+
+pub const PLAYER_W_HALF = @divFloor(PLAYER_W, 2);
+pub const PLAYER_H_HALF = @divFloor(PLAYER_H, 2);
