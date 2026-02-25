@@ -31,11 +31,11 @@ pub const ContextMenuState = struct {
     priority: enum { attack, pick_up, talk, move_to },
 
     pub fn inc(self: *ContextMenuState) void {
-        self.index += @min(self.index + 1, self.max_index());
+        self.index = @min(self.index + 1, self.max_index());
     }
 
     pub fn dec(self: *ContextMenuState) void {
-        self.index -|= 0;
+        self.index -|= 1;
     }
 
     pub fn max_index(self: ContextMenuState) usize {
