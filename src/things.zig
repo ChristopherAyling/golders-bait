@@ -17,12 +17,6 @@ pub const InteractionMode = enum {
     SELECT,
 };
 
-pub const ContextMenu = enum {
-    Attack,
-    PickUp,
-    Talk,
-};
-
 pub const QueryOptions = struct {
     kind: ?Kind = null,
     active: ?bool = true,
@@ -84,14 +78,6 @@ pub const Thing = struct {
     // selector specific
     selection_target_ref: ThingRef = ThingRef.nil(), // associated selector
 
-    pub fn make_context_menu(self: Thing) ?ContextMenu {
-        return switch (self.kind) {
-            .NPC => .Talk,
-            .ITEM => .PickUp,
-            else => null,
-        };
-    }
-
     pub fn manhat_dist(self: Thing, x: i32, y: i32) i32 {
         const x_dist: i32 = @intCast(@abs(self.x - x));
         const y_dist: i32 = @intCast(@abs(self.y - y));
@@ -102,13 +88,6 @@ pub const Thing = struct {
         const dx: f64 = @floatFromInt(self.x - x);
         const dy: f64 = @floatFromInt(self.y - y);
         return @sqrt(dx * dx + dy * dy);
-    }
-
-    pub fn selector_reset(self: *Thing) void {
-        assert(self.kind == .SELECTOR);
-        self.selection_target_ref = ThingRef.nil();
-        // self.context_menu = null;
-        self.spritekey = .selector;
     }
 };
 

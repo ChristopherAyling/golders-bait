@@ -28,10 +28,34 @@ pub const MenuState = struct {
 
 pub const ContextMenuState = struct {
     index: usize = 0,
+    priority: enum { attack, pick_up, talk, move_to },
+
+    pub fn inc(self: *ContextMenuState) void {
+        self.index += @min(self.index + 1, self.max_index());
+    }
+
+    pub fn dec(self: *ContextMenuState) void {
+        self.index -|= 0;
+    }
+
+    pub fn max_index(self: ContextMenuState) usize {
+        _ = self;
+        return 1;
+    }
 };
 pub const InventoryState = struct {
     index: usize = 0,
 };
 pub const ActionMenuState = struct {
     index: usize = 0,
+
+    pub fn set(self: *ActionMenuState, index: usize) void {
+        if (index > self.max_index()) return;
+        self.index = index;
+    }
+
+    pub fn max_index(self: ActionMenuState) usize {
+        _ = self;
+        return 7;
+    }
 };

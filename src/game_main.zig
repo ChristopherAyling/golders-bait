@@ -208,8 +208,8 @@ pub fn game_step_overworld(game_state: *GameState, inputs: Inputs) void {
             switch (current.*) {
                 .context => |*context_menu| {
                     // TODO handle a
-                    if (inputs.up.pressed) context_menu.index -|= 1;
-                    if (inputs.down.pressed) context_menu.index +|= 1;
+                    if (inputs.up.pressed) context_menu.dec();
+                    if (inputs.down.pressed) context_menu.inc();
                 },
                 .action => |*action_menu| {
                     // TODO handle a
@@ -223,7 +223,7 @@ pub fn game_step_overworld(game_state: *GameState, inputs: Inputs) void {
                     if (inputs.directions.contains(.down) and inputs.directions.contains(.left)) radial_index = 5;
                     if (inputs.directions.contains(.left) and inputs.directions.contains(.up)) radial_index = 7;
                     if (inputs.directions.contains(.left) and inputs.directions.contains(.down) and inputs.directions.contains(.right)) radial_index = 3; // special case of holding asd in a row
-                    action_menu.index = radial_index;
+                    action_menu.set(radial_index);
                 },
                 else => {},
             }
@@ -244,9 +244,14 @@ pub fn game_step_overworld(game_state: *GameState, inputs: Inputs) void {
                 {
                     var it = game_state.things.iter();
                     while (it.next_match(.selectable_near(player.x, player.y))) |thing| {
-                        // player.set_context_menu_for(thing.*);
-                        _ = thing;
-                        game_state.menu.push(.{ .context = .{ .index = 0 } });
+                        game_state.menu.push(.{ .context = .{
+                            .index = 0,
+                            .priority = switch (thing.kind) {
+                                .NPC => .talk,
+                                .ITEM => .pick_up,
+                                else => .move_to,
+                            },
+                        } });
                     }
                 }
             }
@@ -280,7 +285,12 @@ pub fn game_step_overworld(game_state: *GameState, inputs: Inputs) void {
 
             // make sure context menu is set
             if (!selector.selection_target_ref.is_nil() and inputs.y.pressed) {
-                game_state.menu.push(.{ .context = .{} });
+                const selection = game_state.things.get(selector.selection_target_ref);
+                game_state.menu.push(.{ .context = .{ .index = 0, .priority = switch (selection.kind) {
+                    .NPC => .talk,
+                    .ITEM => .pick_up,
+                    else => .move_to,
+                } } });
                 return;
             }
 
@@ -381,8 +391,8 @@ pub fn render_step_overworld(game_state: *GameState, render_state: *RenderState)
                 },
                 .context => |context_menu| {
                     var items: ui.ContextMenuItems = .{};
-                    items.add("ctx example 1");
-                    items.add("other ctx example");
+                    items.add(@tagName(context_menu.priority));
+                    items.add("examine");
                     ui.draw_context_menu(&render_state.screen, con.NATIVE_W_HALF + con.PLAYER_W, con.NATIVE_H_HALF + con.PLAYER_H, context_menu.index, items);
                 },
                 .action => |action_menu| {
