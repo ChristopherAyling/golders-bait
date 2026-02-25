@@ -16,6 +16,7 @@ const effects = @import("effects.zig");
 const Level = @import("level.zig").Level;
 const audio = @import("audio.zig");
 const ThingPool = @import("things.zig").ThingPool;
+const menus = @import("menus.zig");
 
 const Inputs = control.Inputs;
 const updateInputs = control.updateInputs;
@@ -23,7 +24,7 @@ const updateInputs = control.updateInputs;
 
 const GameMode = enum {
     MainMenu,
-    Inventory,
+    // Inventory,
     Overworld,
 };
 
@@ -45,6 +46,7 @@ const LEVELS = std.StaticStringMap([]const u8).initComptime(.{
 const GameState = struct {
     // mode
     mode: GameMode,
+    menu: menus.MenuState,
 
     ctx: GameContext,
 
@@ -133,6 +135,7 @@ const GameState = struct {
             .ctx = .{ .story_checkpoint = .game_start },
             .dialogue = null,
             .level = null,
+            .menu = .{},
         };
     }
 };
@@ -154,7 +157,7 @@ pub fn game_step(game_state: *GameState, inputs: Inputs) void {
     switch (game_state.mode) {
         GameMode.MainMenu => game_step_main_menu(game_state, inputs),
         GameMode.Overworld => game_step_overworld(game_state, inputs),
-        GameMode.Inventory => game_step_inventory(game_state, inputs),
+        // GameMode.Inventory => game_step_inventory(game_state, inputs),
     }
 
     if (game_state.mode == .Overworld) {
@@ -208,107 +211,89 @@ pub fn game_step_overworld(game_state: *GameState, inputs: Inputs) void {
     }
 
     // opening a menu is second highest priority
-    if (inputs.start.pressed) {
-        game_state.mode = .Inventory;
+    // if (inputs.start.pressed) {
+    //     game_state.mode = .Inventory;
+    //     return;
+    // }
+
+    // world interaction
+    // if (inputs.a.pressed) {
+    //     switch (player.interaction_mode) {
+    //         .NORMAL => {
+    //             var it = game_state.things.iter();
+    //             while (it.next_active_near(player.x, player.y, 8)) |thing| {
+    //                 _ = thing;
+    //                 // TODO: implement dialogue system
+    //             }
+    //         },
+    //         .SELECT => {
+    //             player.interaction_mode = .ACTION_MENU;
+    //         },
+    //         .ACTION_MENU => {
+    //             // execute action
+    //         },
+    //     }
+    // }
+
+    // if (inputs.b.pressed) {
+    //     switch (player.interaction_mode) {
+    //         .NORMAL => {},
+    //         .SELECT => {
+    //             player.interaction_mode = .NORMAL;
+    //         },
+    //         .ACTION_MENU => {
+    //             player.interaction_mode = .SELECT;
+    //         },
+    //     }
+    // }
+
+    // if (inputs.x.pressed) {
+    //     player.interaction_mode = switch (player.interaction_mode) {
+    //         .NORMAL => .SELECT,
+    //         .SELECT => .NORMAL,
+    //         .ACTION_MENU => .NORMAL,
+    //     };
+    // }
+
+    //
+    if (selector.context_menu) |cm| {
+        _ = cm;
+        if (inputs.b.pressed) {
+            player.context_menu = null;
+        }
+        // TODO move contect menu selection up/down
         return;
     }
 
-    // world interaction
-    if (inputs.a.pressed) {
-        switch (player.interaction_mode) {
-            .NORMAL => {
-                var it = game_state.things.iter();
-                while (it.next_active_near(player.x, player.y, 8)) |thing| {
-                    _ = thing;
-                    // TODO: implement dialogue system
-                }
-            },
-            .SELECT => {
-                player.interaction_mode = .ACTION_MENU;
-            },
-            .ACTION_MENU => {
-                // execute action
-            },
-        }
-    }
-
-    if (inputs.b.pressed) {
-        switch (player.interaction_mode) {
-            .NORMAL => {},
-            .SELECT => {
-                player.interaction_mode = .NORMAL;
-            },
-            .ACTION_MENU => {
-                player.interaction_mode = .SELECT;
-            },
-        }
-    }
-
-    if (inputs.x.pressed) {
-        player.interaction_mode = switch (player.interaction_mode) {
-            .NORMAL => .SELECT,
-            .SELECT => .NORMAL,
-            .ACTION_MENU => .NORMAL,
-        };
-    }
-
-    if (player.interaction_mode == .SELECT) {
-        if (selector.context_menu) |cm| {
-            if (inputs.b.pressed or inputs.y.pressed) {
-                selector.selector_reset();
-            } else if (inputs.a.pressed) {
-                // TODO execute selection
-                std.log.debug("executing selection {any} on {any}", .{ @tagName(cm), @tagName(game_state.things.get(selector.selection_target_ref).kind) });
-                selector.selector_reset();
-            }
-        } else {
-            // choose selection
-            {
-                var it = game_state.things.iter_ref();
-                selector.spritekey = .selector;
-                while (it.next_match(.{
-                    .active = true,
-                    .selectable = true,
-                    .position = .{
-                        .x = selector.x,
-                        .y = selector.y,
-                        .thresh = 8,
-                    },
-                })) |ref| {
-                    selector.spritekey = .selector_active;
-                    selector.selection_target_ref = ref;
-                }
-            }
-
-            // handle selection menu
-            if (inputs.y.pressed) {
-                selector.context_menu = switch (game_state.things.get(selector.selection_target_ref).kind) {
-                    .NPC => .Talk,
-                    .ITEM => .PickUp,
-                    else => null,
-                };
-            }
-
-            // handle selector movement
-            selector.visible = true;
-            if (inputs.directions.contains(.up)) selector.y -= 1 * selector_VELOCITY;
-            if (inputs.directions.contains(.down)) selector.y += 1 * selector_VELOCITY;
-            if (inputs.directions.contains(.left)) selector.x -= 1 * selector_VELOCITY;
-            if (inputs.directions.contains(.right)) selector.x += 1 * selector_VELOCITY;
-        }
-    }
-
-    // movement
+    // NEW
     switch (player.interaction_mode) {
         .NORMAL => {
+            if (inputs.a.pressed) {
+                {
+                    var it = game_state.things.iter();
+                    while (it.next_match(.selectable_near(player.x, player.y))) |thing| {
+                        player.set_context_menu_for(thing.*);
+                    }
+                }
+            }
+            if (inputs.x.pressed) {
+                player.interaction_mode = .SELECT;
+                return;
+            }
+            // player movement
             selector.visible = false;
             if (inputs.directions.contains(.up)) player.y -= 1 * PLAYER_VELOCITY;
             if (inputs.directions.contains(.down)) player.y += 1 * PLAYER_VELOCITY;
             if (inputs.directions.contains(.left)) player.x -= 1 * PLAYER_VELOCITY;
             if (inputs.directions.contains(.right)) player.x += 1 * PLAYER_VELOCITY;
         },
-        .SELECT => {},
         .ACTION_MENU => {
+            // selector can stay visible if already using it.
+            if (inputs.x.pressed or inputs.b.pressed) {
+                player.interaction_mode = .NORMAL;
+                return;
+            }
+            // select withing the radial
             var radial_index: usize = 0;
             if (inputs.directions.contains(.up)) radial_index = 0;
             if (inputs.directions.contains(.right)) radial_index = 2;
@@ -320,6 +305,43 @@ pub fn game_step_overworld(game_state: *GameState, inputs: Inputs) void {
             if (inputs.directions.contains(.left) and inputs.directions.contains(.up)) radial_index = 7;
             if (inputs.directions.contains(.left) and inputs.directions.contains(.down) and inputs.directions.contains(.right)) radial_index = 3; // special case of holding asd in a row
             player.radial_index = radial_index;
+        },
+        .SELECT => {
+            selector.visible = true;
+            if (player.context_menu) |cm| {
+                if (inputs.b.pressed or inputs.y.pressed) {
+                    // player.slector_reset();
+                } else if (inputs.a.pressed) {
+                    // TODO execute selection
+                    std.log.debug("executing selection {any} on {any}", .{ @tagName(cm), @tagName(game_state.things.get(selector.selection_target_ref).kind) });
+                    // selector.selector_reset();
+                }
+            } else {
+                // choose selection
+                {
+                    var it = game_state.things.iter_ref();
+                    selector.spritekey = .selector;
+                    while (it.next_match(.selectable_near(selector.x, selector.y))) |ref| {
+                        selector.spritekey = .selector_active;
+                        selector.selection_target_ref = ref;
+                    }
+                }
+
+                // make sure context menu is set
+                if (inputs.y.pressed) {
+                    player.set_context_menu_for(game_state.things.get(selector.selection_target_ref).*);
+                }
+
+                if (inputs.a.pressed) { // radial action menu to apply on selector location
+                    player.interaction_mode = .ACTION_MENU;
+                }
+
+                // handle selector movement
+                if (inputs.directions.contains(.up)) selector.y -= 1 * selector_VELOCITY;
+                if (inputs.directions.contains(.down)) selector.y += 1 * selector_VELOCITY;
+                if (inputs.directions.contains(.left)) selector.x -= 1 * selector_VELOCITY;
+                if (inputs.directions.contains(.right)) selector.x += 1 * selector_VELOCITY;
+            }
         },
     }
 }
@@ -346,7 +368,6 @@ pub fn render_step(game_state: *GameState, render_state: *RenderState) void {
     // render frame
     switch (game_state.mode) {
         GameMode.MainMenu => render_step_main_menu(game_state, render_state),
-        GameMode.Inventory => render_step_inventory(game_state, render_state),
         GameMode.Overworld => render_step_overworld(game_state, render_state),
     }
 }
@@ -417,8 +438,7 @@ pub fn render_step_overworld(game_state: *GameState, render_state: *RenderState)
 
         switch (player.interaction_mode) {
             .SELECT => {
-                const selector = game_state.things.get(player.selector_ref);
-                if (selector.context_menu) |cm| {
+                if (player.context_menu) |cm| {
                     var items: ui.ContextMenuItems = .{};
                     switch (cm) {
                         .Attack => {

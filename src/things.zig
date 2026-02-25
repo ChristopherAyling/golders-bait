@@ -15,7 +15,7 @@ pub const Kind = enum {
 pub const InteractionMode = enum {
     NORMAL,
     SELECT,
-    ACTION_MENU,
+    ACTION_MENU, // this isn't actually an interaction mode. Should just be a menu thing. Need to think more about menu state mgmt.
 };
 
 pub const ContextMenu = enum {
@@ -30,6 +30,18 @@ pub const QueryOptions = struct {
     visible: ?bool = null,
     position: ?struct { x: i32, y: i32, thresh: i32 },
     selectable: ?bool = null,
+
+    pub fn selectable_near(x: i32, y: i32) QueryOptions {
+        return .{
+            .active = true,
+            .selectable = true,
+            .position = .{
+                .x = x,
+                .y = y,
+                .thresh = 8,
+            },
+        };
+    }
 
     pub fn matches(self: QueryOptions, thing: Thing) bool {
         if (self.kind) |kind| {
@@ -74,7 +86,20 @@ pub const Thing = struct {
 
     // selector specific
     selection_target_ref: ThingRef = ThingRef.nil(), // associated selector
-    context_menu: ?ContextMenu = null,
+    context_menu: ?ContextMenu = null, // todo move to player specific
+
+    pub fn make_context_menu(self: Thing) ?ContextMenu {
+        return switch (self.kind) {
+            .NPC => .Talk,
+            .ITEM => .PickUp,
+            else => null,
+        };
+    }
+
+    pub fn set_context_menu_for(self: *Thing, target: Thing) void {
+        assert(self.kind == .PLAYER);
+        self.context_menu = target.make_context_menu();
+    }
 
     pub fn manhat_dist(self: Thing, x: i32, y: i32) i32 {
         const x_dist: i32 = @intCast(@abs(self.x - x));
@@ -91,7 +116,7 @@ pub const Thing = struct {
     pub fn selector_reset(self: *Thing) void {
         assert(self.kind == .SELECTOR);
         self.selection_target_ref = ThingRef.nil();
-        self.context_menu = null;
+        // self.context_menu = null;
         self.spritekey = .selector;
     }
 };
@@ -130,7 +155,7 @@ pub const ThingIterator = struct {
 
     pub fn next_match(self: *ThingIterator, q: QueryOptions) ?*Thing {
         while (self.next()) |thing| {
-            if (q.matches(thing)) return thing;
+            if (q.matches(thing.*)) return thing;
         }
         return null;
     }
