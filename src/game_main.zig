@@ -212,7 +212,7 @@ pub fn game_step_overworld(game_state: *GameState, inputs: Inputs) void {
                         return;
                     }
                     if (inputs.a.pressed) {
-                        // TODO handle a
+                        game_state.menu.pop();
                         switch (context_menu.index) {
                             0 => {
                                 switch (context_menu.priority) {
@@ -441,9 +441,8 @@ pub fn render_step_overworld(game_state: *GameState, render_state: *RenderState)
                 },
                 .examine => |examine_menu| {
                     const examination_target = game_state.things.get(examine_menu.examination_target_ref);
-                    // examination_target.name
                     var buf: [128]u8 = undefined;
-                    const text = std.fmt.bufPrint(&buf, "you examine {any}", .{examination_target.name}) catch unreachable;
+                    const text = std.fmt.bufPrint(&buf, "you examine {s}.", .{examination_target.name}) catch unreachable;
                     ui.drawTextBox(&render_state.screen, "examination", text);
                 },
             }
