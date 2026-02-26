@@ -204,7 +204,7 @@ pub const ThingPool = struct {
 
     pub fn get_player(self: *ThingPool) *Thing {
         var it = self.iter();
-        while (it.next_active_kind(.PLAYER)) |player| {
+        if (it.next_active_kind(.PLAYER)) |player| {
             return player;
         }
         unreachable;
@@ -231,7 +231,7 @@ pub const ThingPool = struct {
     }
 
     pub fn get(self: *ThingPool, ref: ThingRef) *Thing {
-        if (ref.slot >= MAX_THINGS or ref.slot < 0) return self.get_nil(); // slot in bounds
+        if (ref.slot >= MAX_THINGS) return self.get_nil(); // slot in bounds
         if (self.gens[ref.slot] != ref.gen) return self.get_nil(); // slot correct generation
         const thing = &self.things[ref.slot];
         if (!thing.active) return self.get_nil(); // guard against inactive access
@@ -239,11 +239,12 @@ pub const ThingPool = struct {
     }
 
     pub fn get_or_null(self: *ThingPool, ref: ThingRef) ?*Thing {
+        // function exists to play nicely with zig null checking
         if (ref.is_nil()) return null;
         if (self.gens[ref.slot] != ref.gen) return null;
-        return self.get(ref);
-        // if (self.get(ref).)
-        // return &self.things[ref.slot];
+        const thing = self.get(ref);
+        if (!thing.active) return null;
+        return thing;
     }
 
     pub fn get_nil_ref() ThingRef {
