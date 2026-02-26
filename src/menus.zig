@@ -1,7 +1,10 @@
+const ThingRef = @import("things.zig").ThingRef;
+
 pub const Screen = union(enum) {
     context: ContextMenuState,
     inventory: InventoryState,
     action: ActionMenuState,
+    examine: ExaminationMenuState,
 };
 
 const MAX_MENU_DEPTH = 3;
@@ -24,6 +27,10 @@ pub const MenuState = struct {
         if (self.depth == 0) return null;
         return &self.stack[self.depth - 1];
     }
+};
+
+pub const ExaminationMenuState = struct {
+    examination_target_ref: ThingRef,
 };
 
 pub const ContextMenuState = struct {

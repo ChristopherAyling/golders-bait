@@ -211,7 +211,23 @@ pub fn game_step_overworld(game_state: *GameState, inputs: Inputs) void {
                         game_state.menu.pop();
                         return;
                     }
-                    // TODO handle a
+                    if (inputs.a.pressed) {
+                        // TODO handle a
+                        switch (context_menu.index) {
+                            0 => {
+                                switch (context_menu.priority) {
+                                    else => {},
+                                }
+                            },
+                            1 => {
+                                game_state.menu.push(.{ .examine = .{
+                                    .examination_target_ref = player.selection_target_ref,
+                                } });
+                            },
+                            else => {},
+                        }
+                        return;
+                    }
                     if (inputs.up.pressed) context_menu.dec();
                     if (inputs.down.pressed) context_menu.inc();
                 },
@@ -422,6 +438,13 @@ pub fn render_step_overworld(game_state: *GameState, render_state: *RenderState)
                     action_items.add("Jump", .action_menu_jump);
                     action_items.add("Shove", .action_menu_shove);
                     ui.draw_radial_menu(&render_state.screen, &render_state.storage, con.NATIVE_W_HALF, con.NATIVE_H_HALF, action_menu.index, "actions", action_items);
+                },
+                .examine => |examine_menu| {
+                    const examination_target = game_state.things.get(examine_menu.examination_target_ref);
+                    // examination_target.name
+                    var buf: [128]u8 = undefined;
+                    const text = std.fmt.bufPrint(&buf, "you examine {any}", .{examination_target.name}) catch unreachable;
+                    ui.drawTextBox(&render_state.screen, "examination", text);
                 },
             }
         }
