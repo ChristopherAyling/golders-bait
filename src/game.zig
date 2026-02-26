@@ -480,17 +480,21 @@ pub fn render_step_overworld(game_state: *GameState, render_state: *RenderState)
 
 const api = @import("game_api.zig");
 
-export fn dummyGameStep(memory: *api.GameMemory, _: Inputs, platform: api.PlatformAPI) void {
+fn dummyGameStep(memory: *api.GameMemory, _: *const Inputs, _: *const api.PlatformAPI) callconv(.c) void {
     if (!memory.is_initialized) {
         std.log.info("game initialized", .{});
         memory.is_initialized = true;
     }
-    _ = platform;
 }
 
-export fn dummyRenderStep(_: *api.GameMemory, ctx: *api.RenderContext) void {
+fn dummyRenderStep(_: *api.GameMemory, ctx: *api.RenderContext) callconv(.c) void {
     // ctx.screen.clear();
     ctx.screen.setPixel(20, 20, 0xFFAA9A);
+}
+
+comptime {
+    @export(&dummyGameStep, .{ .name = "game_step" });
+    @export(&dummyRenderStep, .{ .name = "render_step" });
 }
 
 // pub fn main() !void {

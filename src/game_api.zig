@@ -25,6 +25,6 @@ pub const RenderContext = struct {
     // storage: *SpriteStorage,
 };
 
-// Function pointer types for dlsym
-pub const GameStepFn = *const fn (*GameMemory, Inputs, PlatformAPI) void;
-pub const RenderStepFn = *const fn (*GameMemory, *RenderContext) void;
+// Function pointer types for dlsym (use pointers for C-ABI compatibility)
+pub const GameStepFn = *const fn (*GameMemory, *const Inputs, *const PlatformAPI) callconv(.c) void;
+pub const RenderStepFn = *const fn (*GameMemory, *RenderContext) callconv(.c) void;

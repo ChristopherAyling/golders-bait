@@ -169,7 +169,7 @@ pub fn main() !void {
         // TODO maybe reload
         updateInputs(&inputs, window);
 
-        game_step(&game_memory, inputs, platform); // TODO pass a dt
+        game_step(&game_memory, &inputs, &platform); // TODO pass a dt
         render_step(&game_memory, &render_context);
 
         screen.upscale(&screen_upscaled, con.SCALE);
