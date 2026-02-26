@@ -21,7 +21,7 @@ pub const QueryOptions = struct {
     kind: ?Kind = null,
     active: ?bool = true,
     visible: ?bool = null,
-    position: ?struct { x: i32, y: i32, thresh: i32 },
+    position: ?struct { x: i32, y: i32, thresh: i32 } = null,
     selectable: ?bool = null,
 
     pub fn selectable_near(x: i32, y: i32) QueryOptions {
@@ -96,13 +96,14 @@ const NIL_SLOT = 0;
 
 pub const ThingRef = struct {
     slot: usize,
+    gen: usize,
 
-    pub fn from_slot(slot: usize) ThingRef {
-        return .{ .slot = slot };
+    pub fn init(slot: usize, gen: usize) ThingRef {
+        return .{ .slot = slot, .gen = gen };
     }
 
     pub fn nil() ThingRef {
-        return .{ .slot = NIL_SLOT };
+        return .{ .slot = NIL_SLOT, .gen = 0 };
     }
 
     pub fn is_nil(self: ThingRef) bool {
@@ -111,14 +112,14 @@ pub const ThingRef = struct {
 };
 
 pub const ThingIterator = struct {
-    items: []Thing,
+    pool: *ThingPool,
     current_slot: usize = 1,
 
     pub fn next(self: *ThingIterator) ?*Thing {
-        while (self.current_slot < self.items.len) {
+        while (self.current_slot < self.pool.len) {
             const slot = self.current_slot;
             self.current_slot += 1;
-            return &self.items[slot];
+            return &self.pool.things[slot];
         }
         return null;
     }
@@ -131,71 +132,75 @@ pub const ThingIterator = struct {
     }
 
     pub fn next_active_near(self: *ThingIterator, x: i32, y: i32, thresh: i32) ?*Thing {
-        while (self.next_active()) |thing| {
-            if (thing.manhat_dist(x, y) < thresh) return thing;
-        }
+        const q: QueryOptions = .{
+            .active = true,
+            .position = .{ .x = x, .y = y, .thresh = thresh },
+        };
+        if (self.next_match(q)) |thing| return thing;
         return null;
     }
 
     pub fn next_active_kind(self: *ThingIterator, kind: Kind) ?*Thing {
-        while (self.next_active()) |thing| {
-            if (thing.kind == kind) return thing;
-        }
+        const q: QueryOptions = .{
+            .active = true,
+            .kind = kind,
+        };
+        if (self.next_match(q)) |thing| return thing;
         return null;
     }
 
     pub fn next_active(self: *ThingIterator) ?*Thing {
-        while (self.current_slot < self.items.len) {
-            const slot = self.current_slot;
-            self.current_slot += 1;
-            if (self.items[slot].active) return &self.items[slot];
-        }
+        const q: QueryOptions = .{
+            .active = true,
+        };
+        if (self.next_match(q)) |thing| return thing;
         return null;
     }
 };
 
 pub const ThingRefIterator = struct {
-    items: []Thing,
+    pool: *ThingPool,
     current_slot: usize = 1,
 
     pub fn next(self: *ThingRefIterator) ?ThingRef {
-        while (self.current_slot < self.items.len) {
+        while (self.current_slot < self.pool.len) {
             const slot = self.current_slot;
             self.current_slot += 1;
-            return ThingRef.from_slot(slot);
+            return ThingRef.init(slot, self.pool.gens[slot]);
         }
         return null;
     }
 
     pub fn next_match(self: *ThingRefIterator, q: QueryOptions) ?ThingRef {
         while (self.next()) |ref| {
-            if (q.matches(self.items[ref.slot])) return ref;
+            if (q.matches(self.pool.things[ref.slot])) return ref;
         }
         return null;
     }
 
     pub fn next_active_kind(self: *ThingRefIterator, kind: Kind) ?ThingRef {
-        while (self.current_slot < self.items.len) {
-            const slot = self.current_slot;
-            self.current_slot += 1;
-            if (self.items[slot].active and self.items[slot].kind == kind) return ThingRef.from_slot(slot);
-        }
+        const q: QueryOptions = .{
+            .active = true,
+            .kind = kind,
+        };
+        if (self.next_match(q)) |thing| return thing;
         return null;
     }
 
     pub fn next_active(self: *ThingRefIterator) ?ThingRef {
-        while (self.current_slot < self.items.len) {
-            const slot = self.current_slot;
-            self.current_slot += 1;
-            if (self.items[slot].active) return ThingRef.from_slot(slot);
-        }
+        const q: QueryOptions = .{
+            .active = true,
+        };
+        if (self.next_match(q)) |thing| return thing;
         return null;
     }
 };
 
 pub const ThingPool = struct {
     things: [MAX_THINGS]Thing = .{Thing{}} ** MAX_THINGS,
+    gens: [MAX_THINGS]usize = .{0} ** MAX_THINGS,
     nextFreeSlot: usize = 1, // TODO use a freelist
+    len: usize = MAX_THINGS,
 
     pub fn get_player(self: *ThingPool) *Thing {
         var it = self.iter();
@@ -226,13 +231,19 @@ pub const ThingPool = struct {
     }
 
     pub fn get(self: *ThingPool, ref: ThingRef) *Thing {
-        if (ref.slot >= MAX_THINGS or ref.slot < 0) return self.get_nil();
-        return &self.things[ref.slot];
+        if (ref.slot >= MAX_THINGS or ref.slot < 0) return self.get_nil(); // slot in bounds
+        if (self.gens[ref.slot] != ref.gen) return self.get_nil(); // slot correct generation
+        const thing = &self.things[ref.slot];
+        if (!thing.active) return self.get_nil(); // guard against inactive access
+        return thing;
     }
 
     pub fn get_or_null(self: *ThingPool, ref: ThingRef) ?*Thing {
         if (ref.is_nil()) return null;
-        return &self.things[ref.slot];
+        if (self.gens[ref.slot] != ref.gen) return null;
+        return self.get(ref);
+        // if (self.get(ref).)
+        // return &self.things[ref.slot];
     }
 
     pub fn get_nil_ref() ThingRef {
@@ -240,15 +251,19 @@ pub const ThingPool = struct {
     }
 
     pub fn get_nil(self: *ThingPool) *Thing {
-        return &self.things[NIL_SLOT];
+        return self.get(ThingRef.nil());
+        // return &self.things[NIL_SLOT];
     }
 
     pub fn add(self: *ThingPool, kind: Kind) ThingRef {
+        // anything being added must be through this function!!!! handles free slots and generations.
         self.things[self.nextFreeSlot] = .{
             .kind = kind,
             .active = true,
         };
-        const ref: ThingRef = .{ .slot = self.nextFreeSlot };
+        const new_slot = self.nextFreeSlot;
+        self.gens[new_slot] += 1;
+        const ref: ThingRef = .{ .slot = new_slot, .gen = self.gens[new_slot] };
         self.nextFreeSlot += 1;
         return ref;
     }
@@ -308,11 +323,12 @@ pub const ThingPool = struct {
     }
 
     pub fn iter(self: *ThingPool) ThingIterator {
-        return .{ .items = &self.things };
+        // return .{ .items = &self.things };
+        return .{ .pool = self };
     }
 
     pub fn iter_ref(self: *ThingPool) ThingRefIterator {
-        return .{ .items = &self.things };
+        return .{ .pool = self };
     }
 
     pub fn len_active(self: *const ThingPool) usize {
