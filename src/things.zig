@@ -251,8 +251,7 @@ pub const ThingPool = struct {
     }
 
     pub fn get_nil(self: *ThingPool) *Thing {
-        return self.get(ThingRef.nil());
-        // return &self.things[NIL_SLOT];
+        return &self.things[NIL_SLOT];
     }
 
     pub fn add(self: *ThingPool, kind: Kind) ThingRef {
