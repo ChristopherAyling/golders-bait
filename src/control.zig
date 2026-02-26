@@ -51,11 +51,11 @@ const ButtonState = struct {
 
 pub const Inputs = struct {
     directions: std.EnumSet(Direction) = .{},
-    a: ButtonState = .{},
-    b: ButtonState = .{},
-    x: ButtonState = .{},
-    y: ButtonState = .{},
-    start: ButtonState = .{},
+    a: ButtonState = .{}, // general "interact button"
+    b: ButtonState = .{}, // general "cancel/back button"
+    x: ButtonState = .{}, // brings up cursor
+    y: ButtonState = .{}, // brings up context menu
+    start: ButtonState = .{}, // inventory
     up: ButtonState = .{},
     down: ButtonState = .{},
     left: ButtonState = .{},
