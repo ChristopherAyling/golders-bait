@@ -8,10 +8,7 @@ const sprites = @import("sprites.zig");
 const Inputs = @import("control.zig").Inputs;
 const audio = @import("audio.zig");
 
-// pub fn main() !void {
-//     std.log.debug("hello from platform main", .{});
-// }
-
+// inputs
 pub fn updateInputs(inputs: *Inputs, window: Window) void {
     const W_KEY = 87;
     const S_KEY = 83;
@@ -55,7 +52,6 @@ pub fn updateInputs(inputs: *Inputs, window: Window) void {
 }
 
 // visual
-
 fn blit(screen: ScreenBuffer, window: *Window) void {
     assert(screen.w == window.w);
     assert(screen.h == window.h);
@@ -67,7 +63,6 @@ fn blit(screen: ScreenBuffer, window: *Window) void {
 // audio
 
 var audio_system: audio.AudioSystem = .{};
-
 const platform_fns = struct {
     fn playSound(track: audio.SfxTrack) void {
         audio_system.playSound(track);
@@ -81,7 +76,6 @@ const platform_fns = struct {
 };
 
 // the real deal
-
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
@@ -104,33 +98,20 @@ pub fn main() !void {
 
     window.before_loop();
 
-    // const game_state: *GameState = try allocator.create(GameState);
-    // game_state.* = GameState.init();
-    // game_state.audio_system.init();
-    // defer allocator.destroy(game_state);
-    // var render_state: RenderState = .{
-    //     .screen = screen,
-    //     .screen_upscaled = screen_upscaled,
-    //     .level = level,
-    //     .storage = storage,
-    // };
-
     // make platform
-    // var audio_system: audio.AudioSystem = .{};
     audio_system.init();
     const platform: api.PlatformAPI = .{
         .playSound = platform_fns.playSound,
         .setMusic = platform_fns.setMusic,
         .stopMusic = platform_fns.stopMusic,
     };
-
     var render_context: api.RenderContext = .{
         .screen = &screen,
         .level = &level,
         .storage = &storage,
     };
 
-    // intial dll load
+    // dll load
     var lib = try std.DynLib.open("zig-out/lib/libgame.dylib");
     defer lib.close();
 
@@ -142,9 +123,7 @@ pub fn main() !void {
         std.debug.print("failed to find render_step\n", .{});
         return;
     };
-
-    // const game_step: api.GameStepFn = dummyGameStep;
-    // const render_step: api.RenderStepFn = dummyRenderStep;
+    // end dll load
 
     // initialise game memory
     var game_state: api.GameState = .{};

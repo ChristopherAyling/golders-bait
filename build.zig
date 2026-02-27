@@ -1,6 +1,24 @@
 const std = @import("std");
 
-fn configureExecutable(b: *std.Build, target: std.Build.ResolvedTarget, exe: *std.Build.Step.Compile) void {
+fn configureGameExecutable(b: *std.Build, target: std.Build.ResolvedTarget, exe: *std.Build.Step.Compile) void {
+    exe.addIncludePath(b.path("src"));
+    exe.addCSourceFile(.{ .file = b.path("src/fenster.c"), .flags = &[_][]const u8{} });
+    exe.addCSourceFile(.{ .file = b.path("src/miniaudio.c"), .flags = &[_][]const u8{} });
+
+    switch (target.result.os.tag) {
+        .macos => exe.linkFramework("Cocoa"),
+        .windows => exe.linkSystemLibrary("gdi32"),
+        .linux => exe.linkSystemLibrary("X11"),
+        else => {},
+    }
+    exe.linkLibC();
+
+    exe.linkFramework("AudioToolbox");
+    exe.linkFramework("CoreAudio");
+    exe.linkFramework("CoreFoundation");
+}
+
+fn configurePlatformExecutable(b: *std.Build, target: std.Build.ResolvedTarget, exe: *std.Build.Step.Compile) void {
     exe.addIncludePath(b.path("src"));
     exe.addCSourceFile(.{ .file = b.path("src/fenster.c"), .flags = &[_][]const u8{} });
     exe.addCSourceFile(.{ .file = b.path("src/miniaudio.c"), .flags = &[_][]const u8{} });
@@ -37,11 +55,11 @@ pub fn build(b: *std.Build) void {
             .optimize = optimize,
         }),
     });
-    configureExecutable(b, target, game_lib);
+    configurePlatformExecutable(b, target, game_lib);
     b.installArtifact(game_lib);
 
     // game
-    const game: *std.Build.Step.Compile = b.addExecutable(.{
+    const platform: *std.Build.Step.Compile = b.addExecutable(.{
         .name = "platform",
         .root_module = b.createModule(.{
             .root_source_file = b.path("src/platform_main.zig"),
@@ -49,8 +67,8 @@ pub fn build(b: *std.Build) void {
             .target = target,
         }),
     });
-    configureExecutable(b, target, game);
-    b.installArtifact(game);
+    configureGameExecutable(b, target, platform);
+    b.installArtifact(platform);
 
     // const editor: *std.Build.Step.Compile = b.addExecutable(.{
     //     .name = "editor",
@@ -64,7 +82,7 @@ pub fn build(b: *std.Build) void {
     // b.installArtifact(editor);
 
     {
-        const run_cmd = b.addRunArtifact(game);
+        const run_cmd = b.addRunArtifact(platform);
         run_cmd.step.dependOn(b.getInstallStep());
         if (b.args) |args| {
             run_cmd.addArgs(args);
