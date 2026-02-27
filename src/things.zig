@@ -78,6 +78,8 @@ pub const Thing = struct {
     // selector specific
     selection_target_ref: ThingRef = ThingRef.nil(), // associated selector
 
+    // TODO add traits bitset
+
     pub fn manhat_dist(self: Thing, x: i32, y: i32) i32 {
         const x_dist: i32 = @intCast(@abs(self.x - x));
         const y_dist: i32 = @intCast(@abs(self.y - y));
@@ -284,6 +286,7 @@ pub const ThingPool = struct {
         thing.spritekey = spritekey;
         thing.x = x;
         thing.y = y;
+        thing.selectable = true;
 
         thing.camera_ref = self.add_camera(x, y);
         thing.selector_ref = self.add_selector(x, y);

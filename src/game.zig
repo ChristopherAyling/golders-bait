@@ -1,6 +1,5 @@
 const std = @import("std");
 const assert = std.debug.assert;
-const Window = @import("window.zig").Window;
 const draw = @import("draw.zig");
 const ui = @import("ui.zig");
 const Image = @import("image.zig").Image;
@@ -14,7 +13,6 @@ const StoryCheckpoint = @import("story.zig").StoryCheckpoint;
 const con = @import("constants.zig");
 const effects = @import("effects.zig");
 const Level = @import("level.zig").Level;
-const audio = @import("audio.zig");
 const ThingPool = @import("things.zig").ThingPool;
 const menus = @import("menus.zig");
 
@@ -311,11 +309,7 @@ pub fn game_step_main_menu(game_state: *api.GameState, inputs: Inputs, platform_
 fn render_step(memory: *api.GameMemory, ctx: *api.RenderContext) callconv(.c) void {
     const game_state = memory.state;
     var render_state: RenderState = .{ .level = ctx.level.*, .screen = ctx.screen.*, .storage = ctx.storage.* };
-    // pub fn render_step(game_state: *api.GameState, render_state: *RenderState) void {
-    // clear screen
     draw.fill(&render_state.screen, 0x0);
-    // draw.fill(&render_state.screen_upscaled, 0x0);
-    // render frame
     switch (game_state.mode) {
         .MainMenu => render_step_main_menu(game_state, &render_state),
         .Overworld => render_step_overworld(game_state, &render_state),
