@@ -57,6 +57,7 @@ export fn game_init() void {
 
 export fn game_frame() void {
     std.log.debug("frame start", .{});
+    draw.fill_checkerboard(&wasm_state.screen, 10, 0xFFFF00, 0xAAAAAA);
     // game.game_step(memory: *GameMemory, inputs: *const Inputs, platform_api: *const PlatformAPI)
     // game.render_step(memory: *GameMemory, ctx: *RenderContext)
     std.log.debug("frame end", .{});

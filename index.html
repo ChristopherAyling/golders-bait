@@ -1,7 +1,30 @@
 <!DOCTYPE html>
 <html>
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            width: 100%;
+            height: 100%;
+            background: #111;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #game-canvas {
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            max-width: 95vw;
+            max-height: 95vh;
+            width: auto;
+            height: auto;
+        }
+    </style>
+</head>
 <body>
-    <!-- <canvas id="game-canvas" style="image-rendering: pixelated; width: 768px; height: 672px;"></canvas> -->
+    <!-- <h1>game</h1> -->
     <canvas id="game-canvas"></canvas>
 </body>
 
@@ -30,33 +53,62 @@ const exports = instance.exports;
 
 instance.exports.yo();
 instance.exports.game_init();
-const w = instance.exports.get_screen_w();
-const h = instance.exports.get_screen_h();
+
+const game_frame = exports.game_frame;
+
+const w = exports.get_screen_w();
+const h = exports.get_screen_h();
 console.log({w, h})
 
 canvas.width = w;
 canvas.height = h;
 
+function resizeCanvas() {
+    const maxW = window.innerWidth * 0.95;
+    const maxH = window.innerHeight * 0.95;
+    const scale = Math.floor(Math.min(maxW / w, maxH / h));
+    canvas.style.width = (w * scale) + 'px';
+    canvas.style.height = (h * scale) + 'px';
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
 const imageData = ctx.createImageData(w, h);
 
-const fbPtr = exports.get_framebuffer_ptr();
-const fbLen = exports.get_framebuffer_len();
+const frame_to_canvas = () => {
+  const fbPtr = exports.get_framebuffer_ptr();
+  const fbLen = exports.get_framebuffer_len();
 
-// View the framebuffer as u32 array
-const fb32 = new Uint32Array(exports.memory.buffer, fbPtr, fbLen);
-const pixels = imageData.data; // Uint8ClampedArray [R,G,B,A, R,G,B,A, ...]
+  // View the framebuffer as u32 array
+  const fb32 = new Uint32Array(exports.memory.buffer, fbPtr, fbLen);
+  const pixels = imageData.data; // Uint8ClampedArray [R,G,B,A, R,G,B,A, ...]
 
-for (let i = 0; i < fbLen; i++) {
-    const c = fb32[i];
-    const j = i * 4;
-    pixels[j]     = (c >>> 16) & 0xFF; // R
-    pixels[j + 1] = (c >>> 8)  & 0xFF; // G
-    pixels[j + 2] =  c         & 0xFF; // B
-    pixels[j + 3] = 255;               // A (always opaque)
+  for (let i = 0; i < fbLen; i++) {
+      const c = fb32[i];
+      const j = i * 4;
+      pixels[j]     = (c >>> 16) & 0xFF; // R
+      pixels[j + 1] = (c >>> 8)  & 0xFF; // G
+      pixels[j + 2] =  c         & 0xFF; // B
+      pixels[j + 3] = 255;               // A (always opaque)
+  }
+
+  ctx.putImageData(imageData, 0, 0);
 }
 
-ctx.putImageData(imageData, 0, 0);
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 
+while (true) {
+  // TODO step game
+  // TODO render
+  game_frame()
+  frame_to_canvas()
+  await sleep(30)
+  // break;
+}
+
+// frame_to_canvas()
 </script>
 </html>
