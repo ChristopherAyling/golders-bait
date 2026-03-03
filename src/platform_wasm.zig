@@ -7,12 +7,7 @@ const Inputs = @import("control.zig").Inputs;
 const ScreenBuffer = @import("screen.zig").ScreenBuffer;
 const draw = @import("draw.zig");
 const io_embedded = @import("io_embedded.zig");
-
-pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
-    // log_fn(msg.ptr, msg.len);
-    std.log.err("panic: {s}", .{msg});
-    @trap();
-}
+const audio = @import("audio.zig");
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const allocator = gpa.allocator();
@@ -32,6 +27,16 @@ const WasmState = struct {
 
 var wasm_state: WasmState = undefined;
 
+fn noop_playSound(sfx: audio.SfxTrack) void {
+    _ = sfx;
+}
+
+fn noop_setMusic(track: audio.MusicTrack) void {
+    _ = track;
+}
+
+fn noop_stopMusic() void {}
+
 export fn game_init() void {
     std.log.debug("init start", .{});
     wasm_state.screen = ScreenBuffer.init(allocator, con.NATIVE_W, con.NATIVE_H) catch unreachable;
@@ -39,9 +44,9 @@ export fn game_init() void {
     io_embedded.load_sprites(&wasm_state.storage);
 
     wasm_state.platform = .{
-        .playSound = undefined,
-        .setMusic = undefined,
-        .stopMusic = undefined,
+        .playSound = &noop_playSound,
+        .setMusic = &noop_setMusic,
+        .stopMusic = &noop_stopMusic,
         .load_level = io_embedded.load_level,
         .load_level_things = io_embedded.load_level_things,
     };

@@ -118,7 +118,7 @@ fn blit(screen: ScreenBuffer, window: *Window) void {
 
 // audio
 
-var audio_system: audio.AudioSystem = .{};
+var audio_system: io_native.AudioSystem = .{};
 const platform_fns = struct {
     fn playSound(track: audio.SfxTrack) void {
         audio_system.playSound(track);

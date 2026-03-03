@@ -5,6 +5,7 @@ const sprites = @import("sprites.zig");
 const SpriteKey = sprites.SpriteKey;
 const SpriteStorage = sprites.SpriteStorage;
 const ThingPool = @import("things.zig").ThingPool;
+const audio = @import("audio.zig");
 
 // images
 
@@ -119,3 +120,69 @@ pub fn save_level_things(name: []const u8, things: *ThingPool) void {
 }
 
 // audio
+
+const miniaudio = @cImport({
+    @cInclude("miniaudio.h");
+});
+
+const music_paths = std.EnumArray(audio.MusicTrack, [:0]const u8).init(.{
+    .splash = "assets/audio/music/missing.wav",
+    .overworld = "assets/audio/music/overworld.wav",
+});
+
+const sfx_paths = std.EnumArray(audio.SfxTrack, [:0]const u8).init(.{
+    .click = "assets/audio/sfx/click.wav",
+    .close = "assets/audio/sfx/close.wav",
+});
+
+pub const AudioSystem = struct {
+    engine: miniaudio.ma_engine = undefined,
+    engine_initialized: bool = false,
+    current_track: ?audio.MusicTrack = null,
+    music: miniaudio.ma_sound = undefined,
+    music_initialized: bool = false,
+
+    pub fn init(self: *AudioSystem) void {
+        if (miniaudio.ma_engine_init(null, &self.engine) != miniaudio.MA_SUCCESS) @panic("audio engine init failed");
+        self.engine_initialized = true;
+    }
+
+    pub fn deinit(self: *AudioSystem) void {
+        self.stopMusic();
+        if (self.engine_initialized) {
+            miniaudio.ma_engine_uninit(&self.engine);
+            self.engine_initialized = false;
+        }
+    }
+
+    pub fn setMusic(self: *AudioSystem, track: audio.MusicTrack) void {
+        if (track == self.current_track) return;
+
+        self.stopMusic();
+
+        self.current_track = track;
+
+        const music_path = music_paths.get(track);
+        if (miniaudio.ma_sound_init_from_file(&self.engine, music_path.ptr, 0, null, null, &self.music) != miniaudio.MA_SUCCESS) {
+            @panic("could not init sound from file");
+        }
+        self.music_initialized = true;
+        miniaudio.ma_sound_set_looping(&self.music, 1);
+        miniaudio.ma_sound_set_volume(&self.music, 0.4);
+        _ = miniaudio.ma_sound_start(&self.music);
+    }
+
+    pub fn playSound(self: *AudioSystem, track: audio.SfxTrack) void {
+        const sfx_path = sfx_paths.get(track);
+        _ = miniaudio.ma_engine_play_sound(&self.engine, sfx_path.ptr, null);
+    }
+
+    pub fn stopMusic(self: *AudioSystem) void {
+        if (self.music_initialized) {
+            _ = miniaudio.ma_sound_stop(&self.music);
+            miniaudio.ma_sound_uninit(&self.music);
+            self.music_initialized = false;
+            self.current_track = null;
+        }
+    }
+};
