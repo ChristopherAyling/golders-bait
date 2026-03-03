@@ -6,6 +6,13 @@ const sprites = @import("sprites.zig");
 const Inputs = @import("control.zig").Inputs;
 const ScreenBuffer = @import("screen.zig").ScreenBuffer;
 const draw = @import("draw.zig");
+const io_embedded = @import("io_embedded.zig");
+
+pub fn panic(msg: []const u8, _: ?*std.builtin.StackTrace, _: ?usize) noreturn {
+    // log_fn(msg.ptr, msg.len);
+    std.log.err("panic: {s}", .{msg});
+    @trap();
+}
 
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 const allocator = gpa.allocator();
@@ -29,14 +36,13 @@ export fn game_init() void {
     std.log.debug("init start", .{});
     wasm_state.screen = ScreenBuffer.init(allocator, con.NATIVE_W, con.NATIVE_H) catch unreachable;
     wasm_state.level = ScreenBuffer.init(allocator, con.LEVEL_W, con.LEVEL_H) catch unreachable;
-    std.log.debug("init end", .{});
+    io_embedded.load_sprites(&wasm_state.storage);
 
-    // wasm_state.storage.load();
     wasm_state.platform = .{
         .playSound = undefined,
         .setMusic = undefined,
         .stopMusic = undefined,
-        .load_level = undefined,
+        .load_level = io_embedded.load_level,
     };
 
     wasm_state.render_context = .{
@@ -53,6 +59,8 @@ export fn game_init() void {
     };
 
     draw.fill_checkerboard(&wasm_state.screen, 10, 0xFF0000, 0xAAAAAA);
+
+    std.log.debug("init end", .{});
 }
 
 export fn game_frame() void {

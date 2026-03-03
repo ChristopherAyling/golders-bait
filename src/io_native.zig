@@ -18,7 +18,7 @@ const stbi = @cImport({
     @cInclude("stb_image.h");
 });
 
-pub fn image_from_file(filename: [:0]const u8) Image {
+fn image_from_file(filename: [:0]const u8) Image {
     var x: c_int = undefined;
     var y: c_int = undefined;
     var channels_in_file: c_int = undefined;
@@ -79,7 +79,7 @@ pub fn load_sprites(self: *SpriteStorage) void {
 
 // level
 
-pub fn level_from_folder(path: []const u8, name: []const u8) Level {
+fn level_from_folder(path: []const u8, name: []const u8) Level {
     var buf: [256]u8 = undefined;
 
     const bg_path = std.fmt.bufPrintZ(&buf, "{s}/bg.png", .{path}) catch unreachable;
