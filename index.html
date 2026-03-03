@@ -34,7 +34,7 @@ const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext('2d');
 
 import { WASI, File, OpenFile, ConsoleStdout } from
-  "https://esm.sh/@bjorn3/browser_wasi_shim";
+  "./vendor/browser_wasi_shim.js";
 
 const fds = [
   new OpenFile(new File([])),
