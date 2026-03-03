@@ -44,9 +44,9 @@ export fn game_init() void {
     io_embedded.load_sprites(&wasm_state.storage);
 
     wasm_state.platform = .{
-        .playSound = &noop_playSound,
-        .setMusic = &noop_setMusic,
-        .stopMusic = &noop_stopMusic,
+        .playSound = noop_playSound,
+        .setMusic = noop_setMusic,
+        .stopMusic = noop_stopMusic,
         .load_level = io_embedded.load_level,
         .load_level_things = io_embedded.load_level_things,
     };
