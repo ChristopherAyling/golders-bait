@@ -26,6 +26,7 @@ const WasmState = struct {
 };
 
 var wasm_state: WasmState = undefined;
+var inputs: Inputs = .{};
 
 fn noop_playSound(sfx: audio.SfxTrack) void {
     _ = sfx;
@@ -36,6 +37,37 @@ fn noop_setMusic(track: audio.MusicTrack) void {
 }
 
 fn noop_stopMusic() void {}
+
+// JS calls this with a bitmask of currently-held keys each frame
+export fn set_input_state(bits: u32) void {
+    // Bit layout matches platform_main.zig key mappings:
+    // bit 0: up (W)
+    // bit 1: down (S)
+    // bit 2: left (A)
+    // bit 3: right (D)
+    // bit 4: a (H)
+    // bit 5: b (J)
+    // bit 6: x (K)
+    // bit 7: y (L)
+    // bit 8: start (E)
+
+    inputs.up.update(bits & 1 != 0);
+    inputs.down.update(bits & 2 != 0);
+    inputs.left.update(bits & 4 != 0);
+    inputs.right.update(bits & 8 != 0);
+    inputs.a.update(bits & 16 != 0);
+    inputs.b.update(bits & 32 != 0);
+    inputs.x.update(bits & 64 != 0);
+    inputs.y.update(bits & 128 != 0);
+    inputs.start.update(bits & 256 != 0);
+
+    // Update directions EnumSet
+    inputs.directions = .{};
+    if (inputs.up.is_active()) inputs.directions.insert(.up);
+    if (inputs.down.is_active()) inputs.directions.insert(.down);
+    if (inputs.left.is_active()) inputs.directions.insert(.left);
+    if (inputs.right.is_active()) inputs.directions.insert(.right);
+}
 
 export fn game_init() void {
     std.log.debug("init start", .{});
@@ -70,10 +102,8 @@ export fn game_init() void {
 }
 
 export fn game_frame() void {
-    std.log.debug("frame {any} start", .{wasm_state.frame_i});
-    // game.game_step(memory: *GameMemory, inputs: *const Inputs, platform_api: *const PlatformAPI)
+    game.game_step(&wasm_state.game_memory, &inputs, &wasm_state.platform);
     game.render_step(&wasm_state.game_memory, &wasm_state.render_context);
-    std.log.debug("frame {any} end", .{wasm_state.frame_i});
     wasm_state.frame_i += 1;
 }
 

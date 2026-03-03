@@ -55,6 +55,27 @@ instance.exports.yo();
 instance.exports.game_init();
 
 const game_frame = exports.game_frame;
+const set_input_state = exports.set_input_state;
+
+// Input handling - same keys as platform_main.zig
+const keys = {};
+document.addEventListener('keydown', e => { keys[e.code] = true; e.preventDefault(); });
+document.addEventListener('keyup', e => { keys[e.code] = false; });
+
+function getInputBits() {
+    let bits = 0;
+    if (keys['KeyW'])     bits |= 1;    // up
+    if (keys['KeyS'])     bits |= 2;    // down
+    if (keys['KeyA'])     bits |= 4;    // left
+    if (keys['KeyD'])     bits |= 8;    // right
+    if (keys['KeyH'])     bits |= 16;   // a
+    if (keys['KeyJ'])     bits |= 32;   // b
+    if (keys['KeyK'])     bits |= 64;   // x
+    if (keys['KeyL'])     bits |= 128;  // y
+    if (keys['KeyE'])     bits |= 256;  // start
+    console.log(bits)
+    return bits;
+}
 
 const w = exports.get_screen_w();
 const h = exports.get_screen_h();
@@ -101,12 +122,10 @@ function sleep(ms) {
 
 
 while (true) {
-  // TODO step game
-  // TODO render
-  game_frame()
-  frame_to_canvas()
-  await sleep(30)
-  // break;
+  set_input_state(getInputBits());
+  game_frame();
+  frame_to_canvas();
+  await sleep(10);
 }
 
 // frame_to_canvas()

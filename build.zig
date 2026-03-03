@@ -147,6 +147,7 @@ pub fn build(b: *std.Build) void {
             "get_framebuffer_len",
             "get_screen_w",
             "get_screen_h",
+            "set_input_state",
         };
         b.installArtifact(wasm_game_lib);
     }
