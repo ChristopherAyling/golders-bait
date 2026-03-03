@@ -43,13 +43,13 @@ export fn game_init() void {
         .setMusic = undefined,
         .stopMusic = undefined,
         .load_level = io_embedded.load_level,
-        .load_level_things = io_embedded.load_level,
+        .load_level_things = io_embedded.load_level_things,
     };
 
     wasm_state.render_context = .{
         .level = &wasm_state.level,
         .screen = &wasm_state.screen,
-        .storage = undefined,
+        .storage = &wasm_state.storage,
     };
 
     wasm_state.game_state = .{};
@@ -89,6 +89,9 @@ export fn get_framebuffer_ptr() [*]u8 {
 export fn get_framebuffer_len() usize {
     return wasm_state.screen.data.len;
 }
+
+// wasi-libc requires a main function
+pub fn main() void {}
 
 // dbg
 

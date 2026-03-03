@@ -21,16 +21,93 @@ const stbi = @cImport({
     @cInclude("stb_image.h");
 });
 
+// Embedded assets - provided by build.zig as a module
+const assets = @import("embedded_assets");
+
+fn image_from_memory(data: []const u8) Image {
+    var x: c_int = undefined;
+    var y: c_int = undefined;
+    var channels_in_file: c_int = undefined;
+
+    const raw = stbi.stbi_load_from_memory(data.ptr, @intCast(data.len), &x, &y, &channels_in_file, 4) orelse {
+        @panic("Failed to load embedded image");
+    };
+
+    const pixels = @as(usize, @intCast(x)) * @as(usize, @intCast(y));
+    const pixel_data: [*]u32 = @ptrCast(@alignCast(raw));
+
+    for (0..pixels) |i| {
+        const pixel = pixel_data[i];
+        // stb: memory is R,G,B,A -> as u32 little-endian: 0xAABBGGRR
+        // we need: 0x00RRGGBB
+        const r = pixel & 0xFF;
+        const g = (pixel >> 8) & 0xFF;
+        const b = (pixel >> 16) & 0xFF;
+        pixel_data[i] = (r << 16) | (g << 8) | b;
+    }
+
+    return .{ .data = pixel_data[0..pixels], .w = @intCast(x), .h = @intCast(y) };
+}
+
 pub fn load_sprites(storage: *SpriteStorage) void {
-    _ = storage;
+    // misc
+    storage.images[@intFromEnum(SpriteKey.missing)] = image_from_memory(assets.sprite_missing);
+    storage.images[@intFromEnum(SpriteKey.camera)] = image_from_memory(assets.sprite_camera);
+    storage.images[@intFromEnum(SpriteKey.splash)] = image_from_memory(assets.sprite_splash);
+
+    // players
+    storage.images[@intFromEnum(SpriteKey.genly)] = image_from_memory(assets.sprite_genly);
+
+    // npcs
+    storage.images[@intFromEnum(SpriteKey.estraven)] = image_from_memory(assets.sprite_estraven);
+    storage.images[@intFromEnum(SpriteKey.argaven)] = image_from_memory(assets.sprite_argaven);
+
+    // editor
+    storage.images[@intFromEnum(SpriteKey.cursor)] = image_from_memory(assets.sprite_cursor);
+    storage.images[@intFromEnum(SpriteKey.selector)] = image_from_memory(assets.sprite_selector);
+    storage.images[@intFromEnum(SpriteKey.selector_active)] = image_from_memory(assets.sprite_selector_active);
+
+    // items
+    storage.images[@intFromEnum(SpriteKey.redflag)] = image_from_memory(assets.sprite_redflag);
+    storage.images[@intFromEnum(SpriteKey.potion)] = image_from_memory(assets.sprite_potion);
+
+    // action menu
+    storage.images[@intFromEnum(SpriteKey.action_menu_melee)] = image_from_memory(assets.sprite_sword);
+    storage.images[@intFromEnum(SpriteKey.action_menu_ranged)] = image_from_memory(assets.sprite_wand);
+    storage.images[@intFromEnum(SpriteKey.action_menu_magic)] = image_from_memory(assets.sprite_missing);
+    storage.images[@intFromEnum(SpriteKey.action_menu_throw)] = image_from_memory(assets.sprite_missing);
+    storage.images[@intFromEnum(SpriteKey.action_menu_hide)] = image_from_memory(assets.sprite_missing);
+    storage.images[@intFromEnum(SpriteKey.action_menu_dash)] = image_from_memory(assets.sprite_missing);
+    storage.images[@intFromEnum(SpriteKey.action_menu_jump)] = image_from_memory(assets.sprite_missing);
+    storage.images[@intFromEnum(SpriteKey.action_menu_shove)] = image_from_memory(assets.sprite_missing);
 }
 
 pub fn load_level(name: []const u8) Level {
-    _ = name;
-    return undefined;
+    if (std.mem.eql(u8, name, "one")) {
+        return .{
+            .name = name,
+            .bg = image_from_memory(assets.level_tutorial_bg),
+            .fg = image_from_memory(assets.level_tutorial_fg),
+        };
+    } else if (std.mem.eql(u8, name, "arch")) {
+        return .{
+            .name = name,
+            .bg = image_from_memory(assets.level_parade_bg),
+            .fg = image_from_memory(assets.level_parade_fg),
+        };
+    } else {
+        @panic("Unknown level name");
+    }
 }
 
 pub fn load_level_things(name: []const u8, things: *ThingPool) void {
-    _ = name;
-    _ = things;
+    if (std.mem.eql(u8, name, "arch")) {
+        const bytes = std.mem.asBytes(things);
+        // things.bin was serialized on 64-bit (usize=8), WASM is 32-bit (usize=4)
+        // Only load if sizes match, otherwise leave empty
+        if (bytes.len == assets.level_parade_things.len) {
+            @memcpy(bytes, assets.level_parade_things);
+        }
+    }
+    // tutorial has no things.bin, so we leave the pool empty
 }

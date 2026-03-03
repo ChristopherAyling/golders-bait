@@ -115,15 +115,27 @@ pub fn build(b: *std.Build) void {
             .cpu_arch = .wasm32,
             .os_tag = .wasi,
         });
+
+        // Embedded assets module (at project root so it can access assets/)
+        const embedded_assets_module = b.createModule(.{
+            .root_source_file = b.path("embedded_assets.zig"),
+            .target = wasm_target,
+            .optimize = optimize,
+        });
+
         const wasm_game_lib = b.addExecutable(.{
             .name = "game",
             .root_module = b.createModule(.{
                 .root_source_file = b.path("src/platform_wasm.zig"),
                 .target = wasm_target,
                 .optimize = optimize,
+                .imports = &.{
+                    .{ .name = "embedded_assets", .module = embedded_assets_module },
+                },
             }),
         });
-        wasm_game_lib.entry = .disabled;
+        wasm_game_lib.addIncludePath(b.path("src"));
+        wasm_game_lib.linkLibC();
         wasm_game_lib.root_module.export_symbol_names = &.{
             // dbg
             "yo",
