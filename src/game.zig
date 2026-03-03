@@ -311,7 +311,6 @@ fn render_step_overworld(game_state: *api.GameState, render_state: *RenderState)
     const player = game_state.things.get_player();
     const selector = game_state.things.get(player.selector_ref);
     const camera = game_state.things.get(player.camera_ref);
-    draw.fill_checkerboard(&render_state.level, 8, 0xFF0000, 0x0);
     {
         draw.draw_image(&render_state.level, game_state.level.?.bg, 0, 0);
 

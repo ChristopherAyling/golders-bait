@@ -122,7 +122,10 @@ function sleep(ms) {
 
 while (true) {
   set_input_state(getInputBits());
+  const t0 = performance.now();
   game_frame();
+  const t1 = performance.now();
+  console.log(`game_frame: ${(t1 - t0).toFixed(2)}ms`);
   frame_to_canvas();
   await sleep(1);
 }
