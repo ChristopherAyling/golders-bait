@@ -179,7 +179,9 @@ pub fn editor_step(memory: *api.EditorMemory, inputs: *const Inputs, platform_ap
                                 platform_api.save_level_things(editor_state.level.?.name, &editor_state.things);
                                 std.log.debug("saved", .{});
                             },
-                            .levels => {},
+                            .levels => {
+                                editor_state.menu.push(.{ .editor_level_select = menus.EditorLevelSelectMenuState.init(LEVEL_SELECT_MENU) });
+                            },
                             .quit => {
                                 memory.done = true;
                             },
