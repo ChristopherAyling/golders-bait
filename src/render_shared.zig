@@ -89,15 +89,26 @@ pub fn draw_named_item_list_collection(screen: *ScreenBuffer, storage: *sprites.
 
     // selection
     const iidx: i32 = @intCast(index);
-    const w: i32 = @intCast(item_list.get(index).label.?.len);
-    draw.draw_line(
-        screen,
-        x0 + padding + con.PLAYER_W + 2,
-        y0 + 1 + title_height + row_height * iidx + con.FONT_H,
-        x0 + padding + con.PLAYER_W + 2 + (w * (con.FONT_W + 1)),
-        y0 + 1 + title_height + row_height * iidx + con.FONT_H,
-        0xFFF000,
-    );
+    const chosen_item = item_list.get(index);
+    if (chosen_item.label) |label| {
+        const w: i32 = @intCast(label.len);
+        draw.draw_line(
+            screen,
+            x0 + padding + con.PLAYER_W + 2,
+            y0 + 1 + title_height + row_height * iidx + con.FONT_H,
+            x0 + padding + con.PLAYER_W + 2 + (w * (con.FONT_W + 1)),
+            y0 + 1 + title_height + row_height * iidx + con.FONT_H,
+            0xFFF000,
+        );
+    }
+    if (chosen_item.icon) |_| {
+        draw.draw_image(
+            screen,
+            storage.get(.cursor),
+            x0 + padding,
+            y0 + title_height + row_height * (iidx),
+        );
+    }
 }
 
 pub fn render_menu(screen: *ScreenBuffer, storage: *sprites.SpriteStorage, things: *ThingPool, menu_state: *menus.MenuState) void {

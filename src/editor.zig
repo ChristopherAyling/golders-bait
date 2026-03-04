@@ -17,9 +17,35 @@ const menus = @import("menus.zig");
 const Inputs = control.Inputs;
 const render_shared = @import("render_shared.zig");
 
+fn make_placement_menu() menus.NamedItemListCollection {
+    var npcs = menus.NamedItemList.init("npc");
+    npcs.add("aaaa", null);
+    npcs.add("bbb", null);
+    npcs.add("Argaven", .argaven);
+    npcs.add("ccccccccc", null);
+    npcs.add("ccccccccc", null);
+    npcs.add("cc", null);
+
+    var items = menus.NamedItemList.init("items");
+    items.add("potato", null);
+    items.add("rabbit", null);
+
+    var player = menus.NamedItemList.init("player");
+    player.add("genly", null);
+
+    var placement_menu = menus.NamedItemListCollection.init();
+    placement_menu.add(npcs);
+    placement_menu.add(items);
+    placement_menu.add(player);
+
+    return placement_menu;
+}
+
 pub fn editor_step(memory: *api.GameMemory, inputs: *const Inputs, platform_api: *const api.PlatformAPI) callconv(.c) void {
+    _ = platform_api;
     const editor_state = memory.state;
 
+    // handle menu inputs
     if (editor_state.menu.current()) |current| {
         if (inputs.b.pressed) { // todo disable this if is a dialogue. you can't b out of a dialogue! i think
             editor_state.menu.pop();
@@ -35,6 +61,10 @@ pub fn editor_step(memory: *api.GameMemory, inputs: *const Inputs, platform_api:
                     }
                 },
                 .editor_place => |*editor_place_menu| {
+                    if (inputs.a.pressed) {
+                        // TODO place in the world
+
+                    }
                     if (inputs.left.pressed) {
                         editor_place_menu.prev_category();
                         return;
@@ -58,39 +88,16 @@ pub fn editor_step(memory: *api.GameMemory, inputs: *const Inputs, platform_api:
         }
         return;
     }
-    // _ = memory;
-    // _ = inputs;
-    // _ = platform_api;
 
     if (inputs.a.pressed) {
-        var npcs = menus.NamedItemList.init("npc");
-        npcs.add("aaaa", null);
-        npcs.add("bbb", null);
-        npcs.add("Argaven", .argaven);
-        npcs.add("ccccccccc", null);
-        npcs.add("ccccccccc", null);
-        npcs.add("cc", null);
-
-        var items = menus.NamedItemList.init("items");
-        items.add("potato", null);
-        items.add("rabbit", null);
-
-        var player = menus.NamedItemList.init("player");
-        player.add("genly", null);
-
-        var m = menus.NamedItemListCollection.init();
-        m.add(npcs);
-        m.add(items);
-        m.add(player);
-
-        editor_state.menu.push(.{ .editor_place = menus.EditorPlaceMenuState.init(m) });
+        // open placement menu
+        editor_state.menu.push(.{ .editor_place = menus.EditorPlaceMenuState.init(make_placement_menu()) });
         return;
     }
 
-    if (inputs.b.pressed) {
-        platform_api.playSound(.click);
-        return;
-    }
+    // TODO open settings menu (save etc)
+
+    // TODO cursor movement
 }
 
 pub fn render_step(memory: *api.GameMemory, ctx: *api.RenderContext) callconv(.c) void {
