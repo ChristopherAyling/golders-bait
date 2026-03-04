@@ -154,6 +154,27 @@ fn add_wasm(b: *std.Build, optimize: std.builtin.OptimizeMode) void {
     web_step.dependOn(&install_wasm.step);
     web_step.dependOn(&install_html.step);
     web_step.dependOn(&install_vendor.step);
+
+    // GitHub Pages publish step - outputs to pub/ for static hosting
+    const pub_step = b.step("pub", "Build for GitHub Pages (outputs to pub/)");
+
+    // Install wasm to pub/
+    const pub_wasm = b.addInstallArtifact(wasm_game_lib, .{
+        .dest_dir = .{ .override = .{ .custom = "../pub" } },
+    });
+    pub_step.dependOn(&pub_wasm.step);
+
+    // Copy index.html to pub/
+    const pub_html = b.addInstallFile(b.path("src/web/index.html"), "../pub/index.html");
+    pub_step.dependOn(&pub_html.step);
+
+    // Copy vendor/ to pub/vendor/
+    const pub_vendor = b.addInstallDirectory(.{
+        .source_dir = b.path("src/web/vendor/"),
+        .install_dir = .prefix,
+        .install_subdir = "../pub/vendor",
+    });
+    pub_step.dependOn(&pub_vendor.step);
 }
 
 pub fn build(b: *std.Build) void {
