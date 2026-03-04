@@ -159,6 +159,9 @@ pub fn render_menu(screen: *ScreenBuffer, storage: *sprites.SpriteStorage, thing
             .editor_place => |editor_place_menu| {
                 draw_named_item_list_collection(screen, storage, 5, 5, editor_place_menu.categories, editor_place_menu.category, editor_place_menu.index);
             },
+            .editor_options => |editor_options| {
+                draw_named_item_list(screen, storage, 5, 5, editor_options.options, editor_options.index);
+            },
         }
     }
 }

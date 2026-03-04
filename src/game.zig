@@ -187,8 +187,9 @@ fn game_step_overworld(game_state: *api.GameState, inputs: Inputs, platform_api:
                     // todo inventory system.
                 },
                 // editor only
-                .editor_level_select => {},
-                .editor_place => {},
+                .editor_level_select => unreachable,
+                .editor_place => unreachable,
+                .editor_options => unreachable,
             }
             return; // don't do anything else while menu is open
         }

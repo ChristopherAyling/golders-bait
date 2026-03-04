@@ -92,6 +92,20 @@ fn make_level_select_menu() menus.NamedItemList {
 
 const LEVEL_SELECT_MENU = make_level_select_menu();
 
+const Option = enum {
+    save,
+    levels,
+    quit,
+};
+fn make_options_menu() menus.NamedItemList {
+    var options = menus.NamedItemList.init("options");
+    for (std.meta.tags(Option)) |option| {
+        options.add(@tagName(option), .missing);
+    }
+    return options;
+}
+const OPTIONS_MENU = make_options_menu();
+
 const CURSOR_VELOCITY = 1;
 
 pub fn editor_step(memory: *api.EditorMemory, inputs: *const Inputs, platform_api: *const api.PlatformAPI) callconv(.c) void {
@@ -156,7 +170,32 @@ pub fn editor_step(memory: *api.EditorMemory, inputs: *const Inputs, platform_ap
                         return;
                     }
                 },
-                else => {},
+                .editor_options => |*editor_options_menu| {
+                    if (inputs.a.pressed) {
+                        editor_state.menu.pop();
+                        const option: Option = @enumFromInt(editor_options_menu.index);
+                        switch (option) {
+                            .save => {
+                                platform_api.save_level_things(editor_state.level.?.name, &editor_state.things);
+                                std.log.debug("saved", .{});
+                            },
+                            .levels => {},
+                            .quit => {
+                                memory.done = true;
+                            },
+                        }
+                        return;
+                    }
+                    if (inputs.up.pressed) {
+                        editor_options_menu.dec();
+                        return;
+                    }
+                    if (inputs.down.pressed) {
+                        editor_options_menu.inc();
+                        return;
+                    }
+                },
+                else => unreachable,
             }
         }
         return;
@@ -174,6 +213,9 @@ pub fn editor_step(memory: *api.EditorMemory, inputs: *const Inputs, platform_ap
     }
 
     // TODO open settings menu (save etc)
+    if (inputs.start.pressed) {
+        editor_state.menu.push(.{ .editor_options = menus.EditorOptionsMenuState.init(OPTIONS_MENU) });
+    }
 
     // cursor movement
     if (inputs.directions.contains(.up)) editor_state.cursor_y -= 1 * CURSOR_VELOCITY;

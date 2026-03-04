@@ -10,6 +10,7 @@ const ThingPool = @import("things.zig").ThingPool;
 pub const EditorMemory = struct {
     state: *EditorState,
     is_initialized: bool,
+    done: bool = false,
 };
 
 // Callbacks so editor can request audio without owning AudioSystem
@@ -19,6 +20,7 @@ pub const PlatformAPI = struct {
     stopMusic: *const fn () void,
     load_level: *const fn ([]const u8) Level,
     load_level_things: *const fn ([]const u8, *ThingPool) void,
+    save_level_things: *const fn ([]const u8, *ThingPool) void,
 };
 
 // Rendering resources owned by platform, passed to DLL

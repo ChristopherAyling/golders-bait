@@ -120,6 +120,7 @@ pub fn main() !void {
         .stopMusic = platform_fns.stopMusic,
         .load_level = io_native.load_level,
         .load_level_things = io_native.load_level_things,
+        .save_level_things = io_native.save_level_things,
     };
     var render_context: api.RenderContext = .{
         .screen = &screen,
@@ -155,6 +156,7 @@ pub fn main() !void {
             updateInputs(&inputs, window);
 
             editor_lib.editor_step(&editor_memory, &inputs, &platform);
+            if (editor_memory.done) break;
             editor_lib.render_step(&editor_memory, &render_context);
 
             screen.upscale(&screen_upscaled, con.SCALE);

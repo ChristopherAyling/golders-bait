@@ -17,6 +17,7 @@ pub const Screen = union(enum) {
     // editor only
     editor_place: EditorPlaceMenuState,
     editor_level_select: EditorLevelSelectMenuState,
+    editor_options: EditorOptionsMenuState,
 };
 
 const MAX_MENU_DEPTH = 3;
@@ -281,6 +282,35 @@ pub const EditorLevelSelectMenuState = struct {
     }
 
     pub fn dec(self: *EditorLevelSelectMenuState) void {
+        self.index -|= 1;
+    }
+};
+
+pub const EditorOptionsMenuState = struct {
+    index: usize = 0,
+    options: NamedItemList,
+
+    pub fn init(options: NamedItemList) EditorOptionsMenuState {
+        return .{
+            .index = 0,
+            .options = options,
+        };
+    }
+
+    pub fn max_index(self: EditorOptionsMenuState) usize {
+        return self.options.max_index();
+    }
+
+    fn legalise_index(self: *EditorOptionsMenuState) void {
+        self.index = @min(self.index, self.max_index());
+    }
+
+    pub fn inc(self: *EditorOptionsMenuState) void {
+        self.index +|= 1;
+        self.legalise_index();
+    }
+
+    pub fn dec(self: *EditorOptionsMenuState) void {
         self.index -|= 1;
     }
 };
