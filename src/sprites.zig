@@ -16,6 +16,9 @@ pub const SpriteKey = enum {
     //items
     redflag,
     potion,
+    // portals
+    portal_source,
+    portal_dest,
 
     // action menu
     action_menu_melee,

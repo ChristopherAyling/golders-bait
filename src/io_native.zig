@@ -68,6 +68,10 @@ pub fn load_sprites(self: *SpriteStorage) void {
     self.images[@intFromEnum(SpriteKey.redflag)] = image_from_file("assets/redflag.png");
     self.images[@intFromEnum(SpriteKey.potion)] = image_from_file("assets/potion.png");
 
+    // portal
+    self.images[@intFromEnum(SpriteKey.portal_source)] = image_from_file("assets/portal_source.png");
+    self.images[@intFromEnum(SpriteKey.portal_dest)] = image_from_file("assets/portal_dest.png");
+
     // action menu
     self.images[@intFromEnum(SpriteKey.action_menu_melee)] = image_from_file("assets/sword.png");
     self.images[@intFromEnum(SpriteKey.action_menu_ranged)] = image_from_file("assets/wand.png");

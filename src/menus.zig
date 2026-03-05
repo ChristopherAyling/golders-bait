@@ -18,6 +18,7 @@ pub const Screen = union(enum) {
     editor_place: EditorPlaceMenuState,
     editor_level_select: EditorLevelSelectMenuState,
     editor_options: EditorOptionsMenuState,
+    editor_portal_dest_select: EditorPortalDestSelectState,
 };
 
 const MAX_MENU_DEPTH = 3;
@@ -237,14 +238,22 @@ pub const EditorPlaceMenuState = struct {
     }
 
     pub fn next_category(self: *EditorPlaceMenuState) void {
-        self.category +|= 1;
-        self.legalise_category();
+        if (self.category == self.categories.max_index()) {
+            self.category = 0;
+        } else {
+            self.category +|= 1;
+            self.legalise_category();
+        }
         self.legalise_index();
     }
 
     pub fn prev_category(self: *EditorPlaceMenuState) void {
-        self.category -|= 1;
-        self.legalise_index();
+        if (self.category == 0) {
+            self.category = self.categories.max_index();
+        } else {
+            self.category -|= 1;
+            self.legalise_index();
+        }
     }
 
     pub fn inc(self: *EditorPlaceMenuState) void {
@@ -313,4 +322,10 @@ pub const EditorOptionsMenuState = struct {
     pub fn dec(self: *EditorOptionsMenuState) void {
         self.index -|= 1;
     }
+};
+
+pub const EditorPortalDestSelectState = struct {
+    portal_ref: ThingRef,
+    x: i32,
+    y: i32,
 };

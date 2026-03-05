@@ -13,6 +13,7 @@ const con = @import("constants.zig");
 const effects = @import("effects.zig");
 const Level = @import("level.zig").Level;
 const ThingPool = @import("things.zig").ThingPool;
+const ThingRef = @import("things.zig").ThingRef;
 const Kind = @import("things.zig").Kind;
 const menus = @import("menus.zig");
 const Inputs = control.Inputs;
@@ -34,44 +35,46 @@ const PLACEMENT_MENU_DATA = [_][]const PlacementEntry{
     &.{
         .{ .label = "player", .icon = .genly },
     },
+    // portals
+    &.{
+        .{ .label = "portal", .icon = .portal_source },
+    },
 };
 
 fn make_placement_menu() menus.NamedItemListCollection {
-    var npcs = menus.NamedItemList.init("npc");
-    for (PLACEMENT_MENU_DATA[0]) |entry| {
-        npcs.add(entry.label, entry.icon);
-    }
-
-    var items = menus.NamedItemList.init("items");
-    for (PLACEMENT_MENU_DATA[1]) |entry| {
-        items.add(entry.label, entry.icon);
-    }
-
-    var player = menus.NamedItemList.init("player");
-    for (PLACEMENT_MENU_DATA[2]) |entry| {
-        player.add(entry.label, entry.icon);
-    }
-
     var placement_menu = menus.NamedItemListCollection.init();
-    placement_menu.add(npcs);
-    placement_menu.add(items);
-    placement_menu.add(player);
-
+    const headers = [_][]const u8{
+        "npc",
+        "items",
+        "player",
+        "portals",
+    };
+    assert(headers.len == PLACEMENT_MENU_DATA.len);
+    for (headers, 0..) |header, idx| {
+        var l = menus.NamedItemList.init(header);
+        for (PLACEMENT_MENU_DATA[idx]) |entry| {
+            l.add(entry.label, entry.icon);
+        }
+        placement_menu.add(l);
+    }
     return placement_menu;
 }
 const PLACEMENT_MENU = make_placement_menu();
 
-fn place(things: *ThingPool, x: i32, y: i32, category: usize, index: usize) void {
+fn place(things: *ThingPool, x: i32, y: i32, category: usize, index: usize) ThingRef {
     const entry = PLACEMENT_MENU_DATA[category][index];
     switch (category) {
         0 => {
-            _ = things.add_npc(entry.icon, x, y);
+            return things.add_npc(entry.icon, x, y);
         },
         1 => {
-            _ = things.add_item(entry.icon, x, y);
+            return things.add_item(entry.icon, x, y);
         },
         2 => {
-            _ = things.add_player(entry.icon, x, y);
+            return things.add_player(entry.icon, x, y);
+        },
+        3 => {
+            return things.add_portal(x, y, .{ .x = 0, .y = 0 });
         },
         else => unreachable,
     }
@@ -113,8 +116,18 @@ pub fn editor_step(memory: *api.EditorMemory, inputs: *const Inputs, platform_ap
 
     // handle menu inputs
     if (editor_state.menu.current()) |current| {
-        if (inputs.b.pressed) { // todo disable this if is a dialogue. you can't b out of a dialogue! i think
-            editor_state.menu.pop();
+        if (inputs.b.pressed) {
+            switch (current.*) {
+                // uncancellable states
+                .dialogue,
+                .editor_portal_dest_select,
+                .editor_level_select,
+                => {},
+                // all others are cancellable
+                else => {
+                    editor_state.menu.pop();
+                },
+            }
             return;
         } else {
             switch (current.*) {
@@ -129,8 +142,20 @@ pub fn editor_step(memory: *api.EditorMemory, inputs: *const Inputs, platform_ap
                 },
                 .editor_place => |*editor_place_menu| {
                     if (inputs.a.pressed) {
-                        place(&editor_state.things, editor_state.cursor_x, editor_state.cursor_y, editor_place_menu.category, editor_place_menu.index);
+                        const ref = place(&editor_state.things, editor_state.cursor_x, editor_state.cursor_y, editor_place_menu.category, editor_place_menu.index);
                         editor_state.menu.pop();
+                        // further actions
+                        switch (editor_state.things.get(ref).kind) {
+                            .PORTAL => {
+                                // you just placed a portal, now select where it links to.
+                                editor_state.menu.push(.{ .editor_portal_dest_select = .{
+                                    .portal_ref = ref,
+                                    .x = editor_state.cursor_x,
+                                    .y = editor_state.cursor_y,
+                                } });
+                            },
+                            else => {},
+                        }
                         return;
                     }
                     if (inputs.left.pressed) {
@@ -171,6 +196,10 @@ pub fn editor_step(memory: *api.EditorMemory, inputs: *const Inputs, platform_ap
                     }
                 },
                 .editor_options => |*editor_options_menu| {
+                    if (inputs.start.pressed) {
+                        editor_state.menu.pop();
+                        return;
+                    }
                     if (inputs.a.pressed) {
                         editor_state.menu.pop();
                         const option: Option = @enumFromInt(editor_options_menu.index);
@@ -194,6 +223,30 @@ pub fn editor_step(memory: *api.EditorMemory, inputs: *const Inputs, platform_ap
                     }
                     if (inputs.down.pressed) {
                         editor_options_menu.inc();
+                        return;
+                    }
+                },
+                .editor_portal_dest_select => |*editor_portal_dest_select_menu| {
+                    if (inputs.directions.contains(.up)) editor_portal_dest_select_menu.y -= 1 * CURSOR_VELOCITY;
+                    if (inputs.directions.contains(.down)) editor_portal_dest_select_menu.y += 1 * CURSOR_VELOCITY;
+                    if (inputs.directions.contains(.left)) editor_portal_dest_select_menu.x -= 1 * CURSOR_VELOCITY;
+                    if (inputs.directions.contains(.right)) editor_portal_dest_select_menu.x += 1 * CURSOR_VELOCITY;
+
+                    // camera follow portal selecotor
+                    editor_state.camera_x = editor_portal_dest_select_menu.x;
+                    editor_state.camera_y = editor_portal_dest_select_menu.y;
+
+                    const portal = editor_state.things.get(editor_portal_dest_select_menu.portal_ref);
+                    portal.portal_dest.x = editor_portal_dest_select_menu.x;
+                    portal.portal_dest.y = editor_portal_dest_select_menu.y;
+
+                    if (inputs.a.pressed) {
+                        editor_state.menu.pop();
+                        return;
+                    }
+                    if (inputs.b.pressed) {
+                        portal.active = false;
+                        editor_state.menu.pop();
                         return;
                     }
                 },
@@ -237,7 +290,7 @@ pub fn render_step(memory: *api.EditorMemory, ctx: *api.RenderContext) callconv(
         // TODO render bg
         draw.draw_image(ctx.level, level.bg, 0, 0);
         // render things
-        render_shared.render_things(ctx.level, ctx.storage, &editor_state.things);
+        render_shared.render_things(ctx.level, ctx.storage, &editor_state.things, true);
         // TODO render fg
         draw.draw_image(ctx.level, level.fg, 0, 0);
         // render selector

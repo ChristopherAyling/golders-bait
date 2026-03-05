@@ -71,6 +71,11 @@ pub fn load_sprites(storage: *SpriteStorage) void {
     storage.images[@intFromEnum(SpriteKey.redflag)] = image_from_memory(assets.sprite_redflag);
     storage.images[@intFromEnum(SpriteKey.potion)] = image_from_memory(assets.sprite_potion);
 
+    // portals
+    storage.images[@intFromEnum(SpriteKey.portal_source)] = image_from_memory(assets.sprite_missing);
+    storage.images[@intFromEnum(SpriteKey.portal_dest)] = image_from_memory(assets.sprite_missing);
+
+
     // action menu
     storage.images[@intFromEnum(SpriteKey.action_menu_melee)] = image_from_memory(assets.sprite_sword);
     storage.images[@intFromEnum(SpriteKey.action_menu_ranged)] = image_from_memory(assets.sprite_wand);

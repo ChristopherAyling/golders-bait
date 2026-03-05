@@ -190,6 +190,7 @@ fn game_step_overworld(game_state: *api.GameState, inputs: Inputs, platform_api:
                 .editor_level_select => unreachable,
                 .editor_place => unreachable,
                 .editor_options => unreachable,
+                .editor_portal_dest_select => unreachable,
             }
             return; // don't do anything else while menu is open
         }
@@ -323,7 +324,7 @@ fn render_step_overworld(game_state: *api.GameState, render_state: *RenderState)
             draw.draw_line(&render_state.level, player.x + con.PLAYER_W_HALF, player.y + con.PLAYER_H_HALF, selector.x + con.PLAYER_W_HALF, selector.y + con.PLAYER_H_HALF, 0xAAAAAA);
         }
 
-        render_shared.render_things(&render_state.level, &render_state.storage, &game_state.things);
+        render_shared.render_things(&render_state.level, &render_state.storage, &game_state.things, false);
 
         draw.draw_image(&render_state.level, game_state.level.?.fg, 0, 0);
 

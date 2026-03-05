@@ -141,6 +141,8 @@ pub fn main() !void {
     const TARGET_FPS = 60;
     const FRAME_TIME_NS: i64 = @divFloor(std.time.ns_per_s, TARGET_FPS);
     var last_frame_time = std.time.nanoTimestamp();
+    var frame_count: u32 = 0;
+    var fps_timer = std.time.nanoTimestamp();
 
     while (window.loop()) {
         const now = std.time.nanoTimestamp();
@@ -159,6 +161,14 @@ pub fn main() !void {
 
             screen.upscale(&screen_upscaled, con.SCALE);
             blit(screen_upscaled, &window);
+
+            frame_count += 1;
+            const fps_elapsed = now - fps_timer;
+            if (fps_elapsed >= std.time.ns_per_s) {
+                std.debug.print("FPS: {}\n", .{frame_count});
+                frame_count = 0;
+                fps_timer = now;
+            }
         } else {
             std.Thread.sleep(1_000_000); // sleep 1ms to avoid busy-waiting
         }

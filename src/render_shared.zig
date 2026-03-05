@@ -8,13 +8,21 @@ const ThingPool = @import("things.zig").ThingPool;
 const draw = @import("draw.zig");
 const eui = @import("editor_ui.zig");
 
-pub fn render_things(level: *ScreenBuffer, storage: *sprites.SpriteStorage, things: *ThingPool) void {
+pub fn render_things(level: *ScreenBuffer, storage: *sprites.SpriteStorage, things: *ThingPool, show_invisible: bool) void {
 
     // things
     {
         var it = things.iter();
         while (it.next_active()) |thing| {
-            if (thing.visible) draw.draw_image(level, storage.get(thing.spritekey), thing.x, thing.y);
+            if (show_invisible or thing.visible) {
+                draw.draw_image(level, storage.get(thing.spritekey), thing.x, thing.y);
+                switch (thing.kind) {
+                    .PORTAL => {
+                        draw.draw_image(level, storage.get(.portal_dest), thing.portal_dest.x, thing.portal_dest.y);
+                    },
+                    else => {},
+                }
+            }
         }
     }
 
@@ -161,6 +169,9 @@ pub fn render_menu(screen: *ScreenBuffer, storage: *sprites.SpriteStorage, thing
             },
             .editor_options => |editor_options| {
                 draw_named_item_list(screen, storage, 5, 5, editor_options.options, editor_options.index);
+            },
+            .editor_portal_dest_select => |editor_portal_dest_select| {
+                draw.draw_image(screen, storage.get(.portal_dest), editor_portal_dest_select.x, editor_portal_dest_select.y);
             },
         }
     }

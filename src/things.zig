@@ -10,6 +10,7 @@ pub const Kind = enum {
     PLAYER,
     CAMERA,
     SELECTOR,
+    PORTAL,
 };
 
 pub const InteractionMode = enum {
@@ -56,6 +57,12 @@ pub const QueryOptions = struct {
     }
 };
 
+pub const PortalDest = struct {
+    level_name: ?[]const u8 = null, // if null, refers to current level
+    x: i32,
+    y: i32,
+};
+
 pub const Thing = struct {
     active: bool = false, // is an active entity
     spritekey: sprites.SpriteKey = .missing, // what sprite to load to represent it
@@ -77,6 +84,9 @@ pub const Thing = struct {
 
     // selector specific
     selection_target_ref: ThingRef = ThingRef.nil(), // associated selector
+
+    // portal specific
+    portal_dest: PortalDest = undefined,
 
     // TODO add traits bitset
 
@@ -257,6 +267,8 @@ pub const ThingPool = struct {
         return &self.things[NIL_SLOT];
     }
 
+    // constructors
+
     pub fn add(self: *ThingPool, kind: Kind) ThingRef {
         // anything being added must be through this function!!!! handles free slots and generations.
         self.things[self.nextFreeSlot] = .{
@@ -325,8 +337,18 @@ pub const ThingPool = struct {
         return ref;
     }
 
+    pub fn add_portal(self: *ThingPool, x: i32, y: i32, dest: PortalDest) ThingRef {
+        const ref = self.add(.PORTAL);
+        const thing = self.get(ref);
+        thing.spritekey = .portal_source;
+        thing.x = x;
+        thing.y = y;
+        thing.visible = false;
+        thing.portal_dest = dest;
+        return ref;
+    }
+
     pub fn iter(self: *ThingPool) ThingIterator {
-        // return .{ .items = &self.things };
         return .{ .pool = self };
     }
 
