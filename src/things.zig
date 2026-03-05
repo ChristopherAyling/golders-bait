@@ -58,7 +58,7 @@ pub const QueryOptions = struct {
 };
 
 pub const PortalDest = struct {
-    level_name: ?[]const u8 = null, // if null, refers to current level
+    level_name: ?[64]u8 = null, // if null, refers to current level
     x: i32,
     y: i32,
 };
