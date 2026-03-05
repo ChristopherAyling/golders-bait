@@ -224,13 +224,14 @@ pub const ThingPool = struct {
     }
 
     pub fn from_file(self: *ThingPool, path: []const u8) void {
-        const file = std.fs.openFileAbsolute(path, .{}) catch return;
+        const file = std.fs.cwd().openFile(path, .{}) catch return;
+
         defer file.close();
         _ = file.readAll(std.mem.asBytes(self)) catch unreachable;
     }
 
     pub fn to_file(self: *ThingPool, path: []const u8) void {
-        const file = std.fs.createFileAbsolute(path, .{ .truncate = true }) catch unreachable;
+        const file = std.fs.cwd().createFile(path, .{ .truncate = true }) catch unreachable;
         defer file.close();
         file.writeAll(std.mem.asBytes(self)) catch unreachable;
     }

@@ -49,10 +49,10 @@ fn image_from_file(filename: [:0]const u8) ImageError!Image {
 }
 
 pub fn load_sprites(self: *SpriteStorage) void {
-    const missing_sprite = image_from_file("assets/missing.png") catch unreachable;
+    const missing_sprite = image_from_file("src/assets/missing.png") catch unreachable;
     for (std.enums.values(SpriteKey)) |sprite_key| {
         var buf: [256]u8 = undefined;
-        const path = std.fmt.bufPrintZ(&buf, "assets/{s}.png", .{@tagName(sprite_key)}) catch unreachable;
+        const path = std.fmt.bufPrintZ(&buf, "src/assets/{s}.png", .{@tagName(sprite_key)}) catch unreachable;
         self.images[@intFromEnum(sprite_key)] = image_from_file(path) catch missing_sprite;
     }
 }
@@ -77,8 +77,10 @@ fn level_from_folder(path: []const u8, name: []const u8) Level {
 }
 
 const LEVELS = std.StaticStringMap([]const u8).initComptime(.{
-    .{ "one", "/Users/chris/gaming/gam1/assets/levels/tutorial" },
-    .{ "arch", "/Users/chris/gaming/gam1/assets/levels/parade" },
+    // .{ "one", "/Users/chris/gaming/gam1/src/assets/levels/tutorial" },
+    // .{ "arch", "/Users/chris/gaming/gam1/src/assets/levels/parade" },
+    .{ "one", "src/assets/levels/tutorial" },
+    .{ "arch", "src/assets/levels/parade" },
 });
 
 pub fn load_level(name: []const u8) Level {
@@ -106,7 +108,7 @@ const miniaudio = @cImport({
 const music_paths = blk: {
     var result = std.EnumArray(audio.MusicTrack, [:0]const u8).initUndefined();
     for (std.enums.values(audio.MusicTrack)) |track| {
-        result.set(track, "assets/audio/music/" ++ @tagName(track) ++ ".wav");
+        result.set(track, "src/assets/audio/music/" ++ @tagName(track) ++ ".wav");
     }
     break :blk result;
 };
@@ -114,7 +116,7 @@ const music_paths = blk: {
 const sfx_paths = blk: {
     var result = std.EnumArray(audio.SfxTrack, [:0]const u8).initUndefined();
     for (std.enums.values(audio.SfxTrack)) |sfx| {
-        result.set(sfx, "assets/audio/sfx" ++ @tagName(sfx) ++ ".wav");
+        result.set(sfx, "src/assets/audio/sfx/" ++ @tagName(sfx) ++ ".wav");
     }
     break :blk result;
 };

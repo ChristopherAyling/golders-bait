@@ -141,7 +141,7 @@ fn add_wasm(b: *std.Build, optimize: std.builtin.OptimizeMode) void {
 
     // Copy audio/ to web/audio/
     const install_audio = b.addInstallDirectory(.{
-        .source_dir = b.path("assets/audio/"),
+        .source_dir = b.path("src/assets/audio/"),
         .install_dir = .prefix,
         .install_subdir = "web/audio",
     });
