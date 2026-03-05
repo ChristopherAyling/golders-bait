@@ -12,4 +12,4 @@
 - [ ] actually have core gameplay systems and a level to play
 - [ ] inventory system
 
-- [ ] per character dialogues
+- [x] per character dialogues

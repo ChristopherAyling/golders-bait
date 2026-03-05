@@ -1,6 +1,7 @@
 const std = @import("std");
 const assert = @import("std").debug.assert;
 const sprites = @import("sprites.zig");
+const NpcKey = @import("npcs.zig").NpcKey;
 
 pub const Kind = enum {
     UNSET,
@@ -87,6 +88,9 @@ pub const Thing = struct {
 
     // portal specific
     portal_dest: PortalDest = undefined,
+
+    // npc specific
+    npc_key: NpcKey = undefined,
 
     // TODO add traits bitset
 
@@ -283,10 +287,12 @@ pub const ThingPool = struct {
         return ref;
     }
 
-    pub fn add_npc(self: *ThingPool, spritekey: sprites.SpriteKey, x: i32, y: i32) ThingRef {
+    pub fn add_npc(self: *ThingPool, npc_key: NpcKey, x: i32, y: i32) ThingRef {
         const ref = self.add(.NPC);
         const thing = self.get(ref);
-        thing.spritekey = spritekey;
+        thing.npc_key = npc_key;
+        thing.spritekey = npc_key.get_spritekey();
+        // thing.spritekey = spritekey;
         thing.x = x;
         thing.y = y;
         thing.selectable = true;

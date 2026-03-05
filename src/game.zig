@@ -5,7 +5,7 @@ const draw = @import("draw.zig");
 const ui = @import("ui.zig");
 const Image = @import("image.zig").Image;
 const ScreenBuffer = @import("screen.zig").ScreenBuffer;
-const dialogues = @import("dialogue.zig");
+const dlogs = @import("dialogue.zig").dialog_lookup;
 const control = @import("control.zig");
 const sprites = @import("sprites.zig");
 const StoryCheckpoint = @import("story.zig").StoryCheckpoint;
@@ -15,6 +15,7 @@ const Level = @import("level.zig").Level;
 const ThingPool = @import("things.zig").ThingPool;
 const menus = @import("menus.zig");
 const render_shared = @import("render_shared.zig");
+const npc_dlogs = @import("npcs.zig").npc_dialog_lookup;
 
 const Inputs = control.Inputs;
 
@@ -23,7 +24,7 @@ pub fn load_level(self: *api.GameState, name: []const u8, platform_api: *const a
     platform_api.load_level_things(name, &self.things);
     self.level = new_level;
     if (std.mem.eql(u8, name, "arch")) {
-        self.menu.push(.{ .dialogue = .{ .index = 0, .sequence = dialogues.PROLOGUE } });
+        self.menu.push(.{ .dialogue = .{ .index = 0, .sequence = dlogs.get(.Prologue) } });
     }
 }
 
@@ -154,10 +155,13 @@ fn game_step_overworld(game_state: *api.GameState, inputs: Inputs, platform_api:
                                         game_state.things.get(context_menu.context_target_ref).visible = false;
                                     },
                                     .talk => {
+                                        const npc = game_state.things.get(context_menu.context_target_ref);
+
                                         game_state.menu.push(.{ .dialogue = .{
                                             .index = 0,
-                                            .sequence = dialogues.MISSING,
+                                            .sequence = dlogs.get(npc_dlogs.get(npc.npc_key)),
                                         } });
+                                        return;
                                     },
                                     .attack => {},
                                     .move_to => {

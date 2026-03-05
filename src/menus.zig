@@ -90,7 +90,7 @@ pub const DialogueMenuState = struct {
     sequence: dialogue.DialogueSequence,
 
     fn max_index(self: DialogueMenuState) usize {
-        return self.sequence.lines.len - 1;
+        return self.sequence.lines.len;
     }
 
     pub fn advance(self: *DialogueMenuState) void {

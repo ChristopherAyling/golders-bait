@@ -35,21 +35,15 @@ pub const PARADE_ARGAVEN = DialogueSequence{
     .id = 0,
     .lines = &[_]DialogueLine{
         .{ .speaker_name = "Argaven:", .text = "i am argaven" },
+        .{ .speaker_name = "Argaven:", .text = "i am argaven 2" },
     },
 };
 
 pub const PARADE_ESTRAVEN = DialogueSequence{
     .id = 0,
     .lines = &[_]DialogueLine{
-        .{ .speaker_name = "Estraven:", .text = "I am a future traitor" },
-    },
-};
-
-pub const TUTORIAL = DialogueSequence{
-    .id = 0,
-    .lines = &[_]DialogueLine{
-        .{ .speaker_name = "Narrator", .text = "like a gameboy" },
-        .{ .speaker_name = "Narrator", .text = "arrow keys, a, b, e=start" },
+        .{ .speaker_name = "Estraven:", .text = "estraven, am I" },
+        .{ .speaker_name = "Estraven:", .text = "estraven, am I, 2" },
     },
 };
 
@@ -64,29 +58,20 @@ pub const MISSING = DialogueSequence{
     },
 };
 
-pub const DialogueState = struct {
-    dialogue_index: usize = 0,
-    dialogue: *const DialogueSequence,
-
-    pub fn init(seq: *const DialogueSequence) DialogueState {
-        return .{
-            .dialogue_index = 0,
-            .dialogue = seq,
-        };
-    }
-
-    pub fn getLine(self: DialogueState) DialogueLine {
-        assert(self.dialogue_index < self.dialogue.lines.len);
-        return self.dialogue.lines[self.dialogue_index];
-    }
-
-    pub fn advance(self: *DialogueState) void {
-        self.dialogue_index += 1;
-    }
-
-    pub fn is_complete(self: DialogueState) bool {
-        return self.dialogue_index >= self.dialogue.lines.len;
-    }
+pub const DialogKey = enum {
+    Missing,
+    Prologue,
+    ParadeArgaven,
+    ParadeEstraven,
 };
 
-// TODO have dialogues be looked up by keys
+// pub const DialogLookup = std.EnumArray(DialogKey, DialogueSequence).initUndefined();
+
+pub const dialog_lookup = init: {
+    var map = std.EnumArray(DialogKey, DialogueSequence).initUndefined();
+    map.set(.Missing, MISSING);
+    map.set(.Prologue, PROLOGUE);
+    map.set(.ParadeArgaven, PARADE_ARGAVEN);
+    map.set(.ParadeEstraven, PARADE_ESTRAVEN);
+    break :init map;
+};

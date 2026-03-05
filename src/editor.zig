@@ -18,13 +18,16 @@ const Kind = @import("things.zig").Kind;
 const menus = @import("menus.zig");
 const Inputs = control.Inputs;
 const render_shared = @import("render_shared.zig");
+const NpcKey = @import("npcs.zig").NpcKey;
 
-const PlacementEntry = struct { label: []const u8, icon: sprites.SpriteKey };
+// NpcKey.
+
+const PlacementEntry = struct { label: []const u8, icon: sprites.SpriteKey = undefined, npc_key: NpcKey = undefined };
 const PLACEMENT_MENU_DATA = [_][]const PlacementEntry{
     // npcs
     &.{
-        .{ .label = "Argaven", .icon = .argaven },
-        .{ .label = "Estraven", .icon = .estraven },
+        .{ .label = "Argaven", .npc_key = .Argaven, .icon = .argaven },
+        .{ .label = "Estraven", .npc_key = .Estraven, .icon = .estraven },
     },
     // items
     &.{
@@ -65,7 +68,7 @@ fn place(things: *ThingPool, x: i32, y: i32, category: usize, index: usize) Thin
     const entry = PLACEMENT_MENU_DATA[category][index];
     switch (category) {
         0 => {
-            return things.add_npc(entry.icon, x, y);
+            return things.add_npc(entry.npc_key, x, y);
         },
         1 => {
             return things.add_item(entry.icon, x, y);
