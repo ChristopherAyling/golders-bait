@@ -153,6 +153,7 @@ pub fn main() !void {
 
             if (window.key(82)) { // R key
                 game_lib.reload();
+                io_native.load_sprites(&storage);
             }
             updateInputs(&inputs, window);
 
