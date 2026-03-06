@@ -104,7 +104,8 @@ pub fn draw_image(screen: *ScreenBuffer, img: image.Image, x0: i32, y0: i32) voi
 
         for (0..row_width) |i| {
             const pixel = src_row[i];
-            if (pixel != 0x0) {
+            const alpha = (pixel >> 24) & 0xFF;
+            if (alpha != 0) {
                 dst_row[i] = pixel;
             }
         }

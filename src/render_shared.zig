@@ -103,9 +103,9 @@ pub fn draw_named_item_list(screen: *ScreenBuffer, storage: *sprites.SpriteStora
         const w: i32 = @intCast(label.len);
         draw.draw_line(
             screen,
-            x0 + padding + con.PLAYER_W + 2,
+            x0 + padding + con.PLAYER_W + 2 - 1,
             y0 + 1 + title_height + row_height * iidx + con.FONT_H,
-            x0 + padding + con.PLAYER_W + 2 + (w * (con.FONT_W + 1)),
+            x0 + padding + con.PLAYER_W + (w * (con.FONT_W + 1)) + 1,
             y0 + 1 + title_height + row_height * iidx + con.FONT_H,
             0xFFF000,
         );
