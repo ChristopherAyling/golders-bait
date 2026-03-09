@@ -333,18 +333,20 @@ pub const EditorPortalDestSelectState = struct {
     portal_ref: ThingRef,
     x: i32,
     y: i32,
-    level_index: usize = 0,
+    level_key: LevelKey = @enumFromInt(0),
+    // level_index: usize = 0,
 
     pub fn max_index(self: EditorPortalDestSelectState) usize {
         _ = self;
         return @typeInfo(LevelKey).@"enum".fields.len;
     }
 
-    pub fn inc_level(self: *EditorPortalDestSelectState) void {
-        self.level_index = @min(self.level_index + 1, self.max_index());
+    pub fn inc(self: *EditorPortalDestSelectState) void {
+        self.level_key = self.level_key.inc();
+        // self.level_index = @min(self.level_index + 1, self.max_index());
     }
 
-    pub fn dec_level(self: *EditorPortalDestSelectState) void {
-        self.level_index -|= 1;
+    pub fn dec(self: *EditorPortalDestSelectState) void {
+        self.level_key = self.level_key.dec();
     }
 };

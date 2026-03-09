@@ -181,9 +181,10 @@ pub fn editor_step(memory: *api.EditorMemory, inputs: *const Inputs, platform_ap
                 },
                 .editor_level_select => |*editor_level_select_menu| {
                     if (inputs.a.pressed) {
-                        const name = @tagName(@as(LevelKey, @enumFromInt(editor_level_select_menu.index)));
-                        editor_state.level = platform_api.load_level(name);
-                        platform_api.load_level_things(name, &editor_state.things);
+                        // const name = @tagName(@as(LevelKey, @enumFromInt(editor_level_select_menu.index)));
+                        const level_key: LevelKey = @enumFromInt(editor_level_select_menu.index);
+                        editor_state.level = platform_api.load_level(level_key);
+                        platform_api.load_level_things(level_key, &editor_state.things);
                         editor_state.cursor_x = con.LEVEL_W_HALF;
                         editor_state.cursor_y = con.LEVEL_H_HALF;
                         editor_state.menu.pop();
@@ -207,7 +208,7 @@ pub fn editor_step(memory: *api.EditorMemory, inputs: *const Inputs, platform_ap
                         const option: Option = @enumFromInt(editor_options_menu.index);
                         switch (option) {
                             .save => {
-                                platform_api.save_level_things(editor_state.level.?.name, &editor_state.things);
+                                platform_api.save_level_things(editor_state.level.?.key, &editor_state.things);
                                 std.log.debug("saved", .{});
                             },
                             .levels => {
@@ -232,11 +233,12 @@ pub fn editor_step(memory: *api.EditorMemory, inputs: *const Inputs, platform_ap
                 .editor_portal_dest_select => |*editor_portal_dest_select_menu| {
                     // select the level
                     if (inputs.x.pressed) {
-                        editor_portal_dest_select_menu.inc_level();
+                        editor_portal_dest_select_menu.inc();
+                        editor_state.portal_dest_level = platform_api.load_level(editor_portal_dest_select_menu.level_key);
                         return;
                     }
                     if (inputs.y.pressed) {
-                        editor_portal_dest_select_menu.dec_level();
+                        editor_portal_dest_select_menu.dec();
                         return;
                     }
 
@@ -312,7 +314,14 @@ pub fn editor_step(memory: *api.EditorMemory, inputs: *const Inputs, platform_ap
 pub fn render_step(memory: *api.EditorMemory, ctx: *api.RenderContext) callconv(.c) void {
     const editor_state = memory.state;
     draw.fill_checkerboard(ctx.level, 8, 0xFF, 0x00FF00);
-    if (editor_state.level) |level| {
+    if (editor_state.portal_dest_level) |level| {
+        draw.draw_image(ctx.level, level.bg, 0, 0);
+        draw.draw_image(ctx.level, level.fg, 0, 0);
+        // render selector
+        draw.draw_image(ctx.level, ctx.storage.get(.cursor), editor_state.cursor_x, editor_state.cursor_y);
+        // take camera view
+        draw.view(ctx.level, ctx.screen, editor_state.camera_x, editor_state.camera_y);
+    } else if (editor_state.level) |level| {
         // TODO render bg
         draw.draw_image(ctx.level, level.bg, 0, 0);
         // render things

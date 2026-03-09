@@ -1,6 +1,7 @@
 const Inputs = @import("control.zig").Inputs;
 const ScreenBuffer = @import("screen.zig").ScreenBuffer;
 const Level = @import("level.zig").Level;
+const LevelKey = @import("level.zig").LevelKey;
 const SpriteStorage = @import("sprites.zig").SpriteStorage;
 const audio = @import("audio.zig");
 pub const GameState = @import("game_state.zig").GameState;
@@ -17,9 +18,8 @@ pub const PlatformAPI = struct {
     playSound: *const fn (audio.SfxTrack) void,
     setMusic: *const fn (audio.MusicTrack) void,
     stopMusic: *const fn () void,
-    load_level: *const fn ([]const u8) Level,
-    load_level_things: *const fn ([]const u8, *ThingPool) void,
-    // TODO add player save file io
+    load_level: *const fn (LevelKey) Level,
+    load_level_things: *const fn (LevelKey, *ThingPool) void,
 };
 
 // Rendering resources owned by platform, passed to DLL

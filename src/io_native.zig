@@ -1,6 +1,7 @@
 const std = @import("std");
 const Image = @import("image.zig").Image;
 const Level = @import("level.zig").Level;
+const LevelKey = @import("level.zig").LevelKey;
 const sprites = @import("sprites.zig");
 const SpriteKey = sprites.SpriteKey;
 const SpriteStorage = sprites.SpriteStorage;
@@ -60,7 +61,7 @@ pub fn load_sprites(self: *SpriteStorage) void {
 
 // level
 
-fn level_from_folder(path: []const u8, name: []const u8) Level {
+fn level_from_folder(path: []const u8, key: LevelKey) Level {
     var buf: [256]u8 = undefined;
 
     const bg_path = std.fmt.bufPrintZ(&buf, "{s}/bg.png", .{path}) catch unreachable;
@@ -70,34 +71,34 @@ fn level_from_folder(path: []const u8, name: []const u8) Level {
     const fg = image_from_file(fg_path) catch unreachable;
 
     return .{
-        .name = name,
+        // .name = name,
+        .key = key,
         .bg = bg,
         .fg = fg,
-        // .music = undefined,
     };
 }
 
-const LEVELS = std.StaticStringMap([]const u8).initComptime(.{
-    .{ "one", "src/assets/levels/tutorial" },
-    .{ "arch", "src/assets/levels/parade" },
-    .{ "library", "src/assets/levels/library" },
-    .{ "library_gate", "src/assets/levels/library_gate" },
-    .{ "court_of_air", "src/assets/levels/court_of_air" },
-});
+const level_paths = blk: {
+    var result = std.EnumArray(LevelKey, [:0]const u8).initUndefined();
+    for (std.enums.values(LevelKey)) |key| {
+        result.set(key, "src/assets/levels/" ++ @tagName(key));
+    }
+    break :blk result;
+};
 
-pub fn load_level(name: []const u8) Level {
-    return level_from_folder(LEVELS.get(name).?, name);
+pub fn load_level(key: LevelKey) Level {
+    return level_from_folder(level_paths.get(key), key);
 }
 
-pub fn load_level_things(name: []const u8, things: *ThingPool) void {
+pub fn load_level_things(key: LevelKey, things: *ThingPool) void {
     var buf: [256]u8 = undefined;
-    const things_path = std.fmt.bufPrintZ(&buf, "{s}/things.bin", .{LEVELS.get(name).?}) catch unreachable;
+    const things_path = std.fmt.bufPrintZ(&buf, "{s}/things.bin", .{level_paths.get(key)}) catch unreachable;
     things.from_file(things_path);
 }
 
-pub fn save_level_things(name: []const u8, things: *ThingPool) void {
+pub fn save_level_things(key: LevelKey, things: *ThingPool) void {
     var buf: [256]u8 = undefined;
-    const things_path = std.fmt.bufPrintZ(&buf, "{s}/things.bin", .{LEVELS.get(name).?}) catch unreachable;
+    const things_path = std.fmt.bufPrintZ(&buf, "{s}/things.bin", .{level_paths.get(key)}) catch unreachable;
     things.to_file(things_path);
 }
 

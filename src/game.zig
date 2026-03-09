@@ -12,6 +12,7 @@ const StoryCheckpoint = @import("story.zig").StoryCheckpoint;
 const con = @import("constants.zig");
 const effects = @import("effects.zig");
 const Level = @import("level.zig").Level;
+const LevelKey = @import("level.zig").LevelKey;
 const ThingPool = @import("things.zig").ThingPool;
 const Thing = @import("things.zig").Thing;
 const menus = @import("menus.zig");
@@ -20,22 +21,22 @@ const npc_dlogs = @import("npcs.zig").npc_dialog_lookup;
 
 const Inputs = control.Inputs;
 
-pub fn load_level(self: *api.GameState, name: []const u8, platform_api: *const api.PlatformAPI) void {
-    const new_level = platform_api.load_level(name);
-    platform_api.load_level_things(name, &self.things);
+pub fn load_level(self: *api.GameState, key: LevelKey, platform_api: *const api.PlatformAPI) void {
+    const new_level = platform_api.load_level(key);
+    platform_api.load_level_things(key, &self.things);
     self.level = new_level;
-    if (std.mem.eql(u8, name, "arch")) {
-        self.menu.push(.{ .dialogue = .{ .index = 0, .sequence = dlogs.get(.Prologue) } });
-    }
+    // if (std.mem.eql(u8, name, "arch")) {
+    //     self.menu.push(.{ .dialogue = .{ .index = 0, .sequence = dlogs.get(.Prologue) } });
+    // }
 }
 
-pub fn ensure_level_loaded(game_state: *api.GameState, name: []const u8, platform_api: *const api.PlatformAPI) void {
+pub fn ensure_level_loaded(game_state: *api.GameState, key: LevelKey, platform_api: *const api.PlatformAPI) void {
     if (game_state.level) |current_level| {
-        if (!std.mem.eql(u8, current_level.name, name)) {
-            load_level(game_state, name, platform_api);
+        if (current_level.key != key) {
+            load_level(game_state, key, platform_api);
         }
     } else {
-        load_level(game_state, name, platform_api);
+        load_level(game_state, key, platform_api);
     }
 }
 
@@ -95,7 +96,7 @@ pub fn game_step(memory: *api.GameMemory, inputs: *const Inputs, platform_api: *
 
     if (game_state.mode == .Overworld) {
         // TODO lookup story beat -> level name and load the correct level.
-        ensure_level_loaded(game_state, "court_of_air", platform_api);
+        ensure_level_loaded(game_state, .court_of_air, platform_api);
         const player = game_state.things.get_player();
         switch (player.interaction_mode) {
             .NORMAL => {
