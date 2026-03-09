@@ -4,6 +4,7 @@
 const std = @import("std");
 const Image = @import("image.zig").Image;
 const Level = @import("level.zig").Level;
+const LevelKey = @import("level.zig").LevelKey;
 const sprites = @import("sprites.zig");
 const SpriteKey = sprites.SpriteKey;
 const SpriteStorage = sprites.SpriteStorage;
@@ -68,37 +69,38 @@ pub fn load_sprites(storage: *SpriteStorage) void {
 
 // levels
 
-// Level files - tutorial
-const level_tutorial_bg = @embedFile("assets/levels/tutorial/bg.png");
-const level_tutorial_fg = @embedFile("assets/levels/tutorial/fg.png");
-
-// Level files - parade
-const level_parade_bg = @embedFile("assets/levels/parade/bg.png");
-const level_parade_fg = @embedFile("assets/levels/parade/fg.png");
-const level_parade_things = @embedFile("assets/levels/parade/things.bin");
-
-pub fn load_level(name: []const u8) Level {
-    if (std.mem.eql(u8, name, "one")) {
-        return .{
-            .name = name,
-            .bg = image_from_memory(level_tutorial_bg),
-            .fg = image_from_memory(level_tutorial_fg),
-        };
-    } else if (std.mem.eql(u8, name, "arch")) {
-        return .{
-            .name = name,
-            .bg = image_from_memory(level_parade_bg),
-            .fg = image_from_memory(level_parade_fg),
-        };
-    } else {
-        @panic("Unknown level name");
+const level_data = blk: {
+    var result = std.EnumArray(LevelKey, struct { bg: []const u8, fg: []const u8 }).initUndefined();
+    for (std.enums.values(LevelKey)) |key| {
+        result.set(key, .{
+            .bg = @embedFile("assets/levels/" ++ @tagName(key) ++ "/bg.png"),
+            .fg = @embedFile("assets/levels/" ++ @tagName(key) ++ "/fg.png"),
+        });
     }
+    break :blk result;
+};
+
+pub fn load_level(key: LevelKey) Level {
+    const data = level_data.get(key);
+    return .{
+        .key = key,
+        .bg = image_from_memory(data.bg),
+        .fg = image_from_memory(data.fg),
+    };
 }
 
-pub fn load_level_things(name: []const u8, things: *ThingPool) void {
-    if (std.mem.eql(u8, name, "arch")) {
-        const bytes = std.mem.asBytes(things);
-        @memcpy(bytes, level_parade_things);
+const things_data = blk: {
+    var result = std.EnumArray(LevelKey, []const u8).initUndefined();
+    for (std.enums.values(LevelKey)) |key| {
+        result.set(key, @embedFile("assets/levels/" ++ @tagName(key) ++ "/things.bin"));
     }
-    // tutorial has no things.bin, so we leave the pool empty
+    break :blk result;
+};
+
+pub fn load_level_things(key: LevelKey, things: *ThingPool) void {
+    const data = things_data.get(key);
+    const bytes = std.mem.asBytes(things);
+    if (data.len == bytes.len) {
+        @memcpy(bytes, data);
+    }
 }
