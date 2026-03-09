@@ -104,7 +104,7 @@ pub fn main() !void {
     var level: ScreenBuffer = try ScreenBuffer.init(allocator, con.LEVEL_W, con.LEVEL_H);
     defer level.deinit(allocator);
 
-    var window = try Window.init(allocator, con.UPSCALED_W, con.UPSCALED_H, "game");
+    var window = try Window.init(allocator, con.UPSCALED_W, con.UPSCALED_H, "Golders Bait");
     defer window.deinit(allocator);
 
     var storage = sprites.SpriteStorage.init();
