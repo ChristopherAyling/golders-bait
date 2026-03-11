@@ -43,6 +43,31 @@ pub fn drawSplashText(screen: *ScreenBuffer, splash_sprite: Image) void {
     draw.draw_text(screen, subtitle, con.NATIVE_W_HALF - (@divFloor(subtitle.len, 2) * (con.FONT_W + 2)), con.NATIVE_H_HALF + 50, 0xFFFFFFFF);
 }
 
+pub fn drawHeader(screen: *ScreenBuffer, text: []const u8) void {
+    const content_width: i32 = @intCast(text.len * (con.FONT_W + 1));
+    const content_width_half = @divFloor(content_width, 2);
+    const content_height = con.FONT_H;
+
+    const header_x: i32 = @intCast(con.NATIVE_W_HALF - (PADDING + content_width_half));
+    const header_y = 4;
+    draw.draw_rec(
+        screen,
+        header_x,
+        header_y,
+        header_x + PADDING + content_width + PADDING,
+        header_y + PADDING + content_height + PADDING,
+        TEXTBOX_COLOR,
+        0x555555,
+    );
+    draw.draw_text(
+        screen,
+        text,
+        header_x + PADDING,
+        header_y + PADDING,
+        TEXT_COLOR,
+    );
+}
+
 pub fn drawTextBox(screen: *ScreenBuffer, speaker: []const u8, text: []const u8) void {
     draw.draw_rec(screen, TEXTBOX_X, TEXTBOX_Y, TEXTBOX_X + TEXTBOX_WIDTH, TEXTBOX_Y + TEXTBOX_HEIGHT, TEXTBOX_COLOR, 0x555555);
     draw.draw_text(screen, speaker, TEXTBOX_X + 3, TEXTBOX_Y + 3, 0xFFFFFF);

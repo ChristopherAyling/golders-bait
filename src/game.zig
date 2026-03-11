@@ -110,7 +110,7 @@ pub fn game_step(memory: *api.GameMemory, inputs: *const Inputs, platform_api: *
 }
 
 fn game_step_overworld(game_state: *api.GameState, inputs: Inputs, platform_api: api.PlatformAPI) void {
-    const player = game_state.things.get_player();
+    var player = game_state.things.get_player();
     var selector = game_state.things.get(player.selector_ref);
     platform_api.setMusic(.overworld);
 
@@ -262,9 +262,17 @@ fn game_step_overworld(game_state: *api.GameState, inputs: Inputs, platform_api:
                     .kind = .PORTAL,
                     .position = .{ .x = player.x, .y = player.y, .thresh = 8 },
                 })) |portal| {
-                    player.x = portal.portal_dest.x;
-                    player.y = portal.portal_dest.y;
+                    const portal_dest_x = portal.portal_dest.x;
+                    const portal_dest_y = portal.portal_dest.y;
+                    std.log.debug("portal_x: {any}, portal_y: {any}", .{ portal_dest_x, portal_dest_y });
+                    if (portal.portal_dest.level_key) |level_key| {
+                        load_level(game_state, level_key, &platform_api);
+                        player = game_state.things.get_player();
+                    }
+                    player.x = portal_dest_x;
+                    player.y = portal_dest_y;
                     platform_api.playSound(.door);
+                    return;
                 }
             }
 

@@ -118,20 +118,7 @@ pub fn editor_step(memory: *api.EditorMemory, inputs: *const Inputs, platform_ap
 
     // handle menu inputs
     if (editor_state.menu.current()) |current| {
-        if (inputs.b.pressed) {
-            switch (current.*) {
-                // uncancellable states
-                .dialogue,
-                .editor_portal_dest_select,
-                .editor_level_select,
-                => {},
-                // all others are cancellable
-                else => {
-                    editor_state.menu.pop();
-                },
-            }
-            return;
-        } else {
+        {
             switch (current.*) {
                 .dialogue => |*dialogue_menu| {
                     if (inputs.a.pressed) {
@@ -143,6 +130,10 @@ pub fn editor_step(memory: *api.EditorMemory, inputs: *const Inputs, platform_ap
                     return;
                 },
                 .editor_place => |*editor_place_menu| {
+                    if (inputs.b.pressed) {
+                        editor_state.menu.pop();
+                        return;
+                    }
                     if (inputs.a.pressed) {
                         const ref = place(&editor_state.things, editor_state.cursor_x, editor_state.cursor_y, editor_place_menu.category, editor_place_menu.index);
                         editor_state.menu.pop();
@@ -150,7 +141,6 @@ pub fn editor_step(memory: *api.EditorMemory, inputs: *const Inputs, platform_ap
                         switch (editor_state.things.get(ref).kind) {
                             .PORTAL => {
                                 // you just placed a portal, now select where it links to.
-                                // select level and x,y in the level
                                 editor_state.menu.push(.{ .editor_portal_dest_select = .{
                                     .portal_ref = ref,
                                     .x = editor_state.cursor_x,
@@ -180,8 +170,11 @@ pub fn editor_step(memory: *api.EditorMemory, inputs: *const Inputs, platform_ap
                     return;
                 },
                 .editor_level_select => |*editor_level_select_menu| {
+                    if (inputs.b.pressed) {
+                        editor_state.menu.pop();
+                        return;
+                    }
                     if (inputs.a.pressed) {
-                        // const name = @tagName(@as(LevelKey, @enumFromInt(editor_level_select_menu.index)));
                         const level_key: LevelKey = @enumFromInt(editor_level_select_menu.index);
                         editor_state.level = platform_api.load_level(level_key);
                         platform_api.load_level_things(level_key, &editor_state.things);
@@ -198,8 +191,13 @@ pub fn editor_step(memory: *api.EditorMemory, inputs: *const Inputs, platform_ap
                         editor_level_select_menu.inc();
                         return;
                     }
+                    return;
                 },
                 .editor_options => |*editor_options_menu| {
+                    if (inputs.b.pressed) {
+                        editor_state.menu.pop();
+                        return;
+                    }
                     if (inputs.start.pressed) {
                         editor_state.menu.pop();
                         return;
@@ -229,6 +227,7 @@ pub fn editor_step(memory: *api.EditorMemory, inputs: *const Inputs, platform_ap
                         editor_options_menu.inc();
                         return;
                     }
+                    return;
                 },
                 .editor_portal_dest_select => |*editor_portal_dest_select_menu| {
                     // select the level
@@ -239,6 +238,7 @@ pub fn editor_step(memory: *api.EditorMemory, inputs: *const Inputs, platform_ap
                     }
                     if (inputs.y.pressed) {
                         editor_portal_dest_select_menu.dec();
+                        editor_state.portal_dest_level = platform_api.load_level(editor_portal_dest_select_menu.level_key);
                         return;
                     }
 
@@ -249,27 +249,32 @@ pub fn editor_step(memory: *api.EditorMemory, inputs: *const Inputs, platform_ap
                     if (inputs.directions.contains(.right)) editor_portal_dest_select_menu.x += 1 * CURSOR_VELOCITY;
 
                     // camera follow portal selecotor
-                    editor_state.camera_x = editor_portal_dest_select_menu.x;
-                    editor_state.camera_y = editor_portal_dest_select_menu.y;
-
                     const portal = editor_state.things.get(editor_portal_dest_select_menu.portal_ref);
                     portal.portal_dest.x = editor_portal_dest_select_menu.x;
                     portal.portal_dest.y = editor_portal_dest_select_menu.y;
+                    portal.portal_dest.level_key = editor_portal_dest_select_menu.level_key;
+
+                    editor_state.camera_x = portal.portal_dest.x;
+                    editor_state.camera_y = portal.portal_dest.y;
+                    editor_state.portal_ref = editor_portal_dest_select_menu.portal_ref;
 
                     if (inputs.a.pressed) {
+                        editor_state.portal_dest_level = null;
                         editor_state.menu.pop();
                         return;
                     }
                     if (inputs.b.pressed) {
                         portal.active = false;
                         editor_state.menu.pop();
+                        editor_state.portal_dest_level = null;
+                        editor_state.portal_ref = .nil();
                         return;
                     }
+                    return;
                 },
                 else => unreachable,
             }
         }
-        return;
     }
 
     if (editor_state.level == null) {
@@ -315,18 +320,22 @@ pub fn render_step(memory: *api.EditorMemory, ctx: *api.RenderContext) callconv(
     const editor_state = memory.state;
     draw.fill_checkerboard(ctx.level, 8, 0xFF, 0x00FF00);
     if (editor_state.portal_dest_level) |level| {
+        const portal = editor_state.things.get(editor_state.portal_ref);
+        // portal.portal_dest.
         draw.draw_image(ctx.level, level.bg, 0, 0);
         draw.draw_image(ctx.level, level.fg, 0, 0);
         // render selector
-        draw.draw_image(ctx.level, ctx.storage.get(.cursor), editor_state.cursor_x, editor_state.cursor_y);
+        draw.draw_image(ctx.level, ctx.storage.get(.portal_dest), portal.portal_dest.x, portal.portal_dest.y);
+        // render portal dest
+
         // take camera view
         draw.view(ctx.level, ctx.screen, editor_state.camera_x, editor_state.camera_y);
     } else if (editor_state.level) |level| {
-        // TODO render bg
+        // render bg
         draw.draw_image(ctx.level, level.bg, 0, 0);
         // render things
         render_shared.render_things(ctx.level, ctx.storage, &editor_state.things, true);
-        // TODO render fg
+        // render fg
         draw.draw_image(ctx.level, level.fg, 0, 0);
         // render selector
         draw.draw_image(ctx.level, ctx.storage.get(.cursor), editor_state.cursor_x, editor_state.cursor_y);

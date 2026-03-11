@@ -20,7 +20,9 @@ pub fn render_things(level: *ScreenBuffer, storage: *sprites.SpriteStorage, thin
                     .PORTAL => {
                         draw.draw_image(level, storage.get(.portal_dest), thing.portal_dest.x, thing.portal_dest.y);
                         if (show_invisible) {
+                            // if (thing.portal_dest.level_key == null) {
                             draw.draw_line(level, thing.x, thing.y, thing.portal_dest.x, thing.portal_dest.y, 0xFFA500);
+                            // }
                         }
                     },
                     else => {},
@@ -258,7 +260,7 @@ pub fn render_menu(screen: *ScreenBuffer, storage: *sprites.SpriteStorage, thing
                 draw_named_item_list(screen, storage, 5, 5, editor_options.options, editor_options.index);
             },
             .editor_portal_dest_select => |editor_portal_dest_select| {
-                draw.draw_image(screen, storage.get(.portal_dest), editor_portal_dest_select.x, editor_portal_dest_select.y);
+                ui.drawHeader(screen, @tagName(editor_portal_dest_select.level_key));
             },
         }
     }
